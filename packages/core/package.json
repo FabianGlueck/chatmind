@@ -15,7 +15,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "js-yaml": "^5.4.1",
+    "js-yaml": "^5.5.0",
     "ulid": "^3.0.2"
   }
 }
