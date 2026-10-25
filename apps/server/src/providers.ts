@@ -1,4 +1,5 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
+import { createMistral } from '@ai-sdk/mistral';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import type { LanguageModel } from 'ai';
@@ -19,6 +20,8 @@ export function createModelFactory(keys: Keys): ModelFactory {
         return createOpenAI({ apiKey })(spec.id);
       case 'openrouter':
         return createOpenRouter({ apiKey })(spec.id);
+      case 'mistral':
+        return createMistral({ apiKey })(spec.id);
     }
   };
 }

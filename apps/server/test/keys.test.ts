@@ -19,8 +19,8 @@ describe('loadKeys', () => {
   it('prefers env, falls back to the file, ignores a missing file', async () => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'chatmind-keys-'));
     const file = path.join(dir, 'env');
-    await fs.writeFile(file, 'OPENAI_API_KEY=file-o\nOPENROUTER_API_KEY=file-r\n');
-    expect(await loadKeys({ ANTHROPIC_API_KEY: 'env-a', OPENAI_API_KEY: 'env-o' }, file)).toEqual({ anthropic: 'env-a', openai: 'env-o', openrouter: 'file-r' });
+    await fs.writeFile(file, 'OPENAI_API_KEY=file-o\nOPENROUTER_API_KEY=file-r\nMISTRAL_API_KEY=file-m\n');
+    expect(await loadKeys({ ANTHROPIC_API_KEY: 'env-a', OPENAI_API_KEY: 'env-o' }, file)).toEqual({ anthropic: 'env-a', openai: 'env-o', openrouter: 'file-r', mistral: 'file-m' });
     expect(await loadKeys({}, path.join(dir, 'nope'))).toEqual({});
     await fs.rm(dir, { recursive: true, force: true });
   });

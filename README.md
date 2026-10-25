@@ -19,12 +19,12 @@ Every message is a card on a canvas. Reply to any card to branch off, merge bran
 - **Topic memories** — the facts and decisions of each topic are distilled into an editable memory that can go into the system prompt.
 - **Notes, images, editing** — put plain notes on the canvas, paste screenshots into questions, edit any card by hand or let a model rewrite it (you accept or discard the preview).
 - **Chat view** — read any strand as a plain linear chat and switch branches at forks.
-- **Several providers** — Anthropic, OpenAI and OpenRouter.
+- **Several providers** — Anthropic, OpenAI, Mistral and OpenRouter.
 - **Local-first** — the server binds to `127.0.0.1`; your messages go only to the model provider you pick.
 
 ## Quick start
 
-Requirements: [Node.js](https://nodejs.org/) 22.22+ and [pnpm](https://pnpm.io/), plus an API key for at least one of Anthropic, OpenAI or OpenRouter. [Obsidian](https://obsidian.md/) is optional.
+Requirements: [Node.js](https://nodejs.org/) 22.22+ and [pnpm](https://pnpm.io/), plus an API key for at least one of Anthropic, OpenAI, Mistral or OpenRouter. [Obsidian](https://obsidian.md/) is optional.
 
 ```bash
 git clone https://github.com/FabianGlueck/chatmind.git
@@ -54,7 +54,7 @@ Settings are read from the environment, then from `~/.config/chatmind/env` (one 
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY` | — | Provider keys. At least one is needed; the composer lists only models whose key is present. |
+| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `MISTRAL_API_KEY`, `OPENROUTER_API_KEY` | — | Provider keys. At least one is needed; the composer lists only models whose key is present. |
 | `CHATMIND_DATA_DIR` | `~/Documents/chatmind` | Where the vault lives (`--data-dir` overrides it). |
 | `CHATMIND_PORT` | `3210` | Server port (`--port` overrides it). |
 | `CHATMIND_NO_INDEX` | off | `1` turns the background indexer off (same as `--no-index`). |

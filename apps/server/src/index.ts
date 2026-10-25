@@ -60,7 +60,7 @@ const linkTuned = describeLinkSettings(linkCfg);
 const app = createApp({ dataDir, staticDir, keys, lock, watcher, indexer, links, placer });
 const server = serve({ fetch: app.fetch, port, hostname: '127.0.0.1' }, () => {
   console.log(`chatmind server on http://127.0.0.1:${port}  data dir: ${dataDir}${staticDir ? `  serving ${staticDir}` : ''}`);
-  console.log(`providers: ${Object.keys(keys).join(', ') || 'none (set ANTHROPIC_API_KEY, OPENAI_API_KEY or OPENROUTER_API_KEY, or ~/.config/chatmind/env)'}`);
+  console.log(`providers: ${Object.keys(keys).join(', ') || 'none (set ANTHROPIC_API_KEY, OPENAI_API_KEY, OPENROUTER_API_KEY or MISTRAL_API_KEY, or ~/.config/chatmind/env)'}`);
   console.log(indexLine);
   if (linkTuned !== null) console.log(`links: ${linkTuned}`);
   // Only once the port is ours: a second server that fails to listen must never index the vault next to the first.

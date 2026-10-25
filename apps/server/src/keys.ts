@@ -4,9 +4,9 @@ import { defaultEnvFile, loadEnv } from '@chatmind/index';
 // identically — a dry run that disagreed with the indexer would mis-report the thresholds it calibrates.
 export { parseEnvFile, loadEnv, defaultEnvFile } from '@chatmind/index';
 
-export interface Keys { anthropic?: string; openai?: string; openrouter?: string }
+export interface Keys { anthropic?: string; openai?: string; openrouter?: string; mistral?: string }
 
-const VARS = { anthropic: 'ANTHROPIC_API_KEY', openai: 'OPENAI_API_KEY', openrouter: 'OPENROUTER_API_KEY' } as const;
+const VARS = { anthropic: 'ANTHROPIC_API_KEY', openai: 'OPENAI_API_KEY', openrouter: 'OPENROUTER_API_KEY', mistral: 'MISTRAL_API_KEY' } as const;
 
 /** Environment first, then the key file; empty strings count as unset. Never throws for a missing file. */
 export async function loadKeys(env: NodeJS.ProcessEnv = process.env, filePath: string = defaultEnvFile()): Promise<Keys> {

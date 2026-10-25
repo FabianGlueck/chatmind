@@ -150,7 +150,7 @@ export function Composer({ targets, language, promptTokens, budget, models, mode
       )}
       <div className="composer-row">
         {available.length === 0 ? (
-          <span className="no-provider">No provider configured — set ANTHROPIC_API_KEY, OPENAI_API_KEY or OPENROUTER_API_KEY (or ~/.config/chatmind/env) and restart chatmind</span>
+          <span className="no-provider">No provider configured — set ANTHROPIC_API_KEY, OPENAI_API_KEY, OPENROUTER_API_KEY or MISTRAL_API_KEY (or ~/.config/chatmind/env) and restart chatmind</span>
         ) : (
           <>
             <fieldset className="models" aria-label="Model">

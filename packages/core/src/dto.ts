@@ -88,7 +88,7 @@ export function repairsForCanvas(graph: CanvasGraph, repairs: Repair[]): Repair[
   });
 }
 
-export type Provider = 'anthropic' | 'openai' | 'openrouter';
+export type Provider = 'anthropic' | 'openai' | 'openrouter' | 'mistral';
 export interface ModelDto {
   id: string;
   provider: Provider;
