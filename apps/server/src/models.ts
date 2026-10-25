@@ -20,9 +20,7 @@ export interface ModelSpec { id: string; provider: Provider; label: string; cont
 // as their OpenRouter counterpart (claude-opus-5 = anthropic/claude-opus-5, etc.).
 // Mistral ids verified 2026-10-25 against the per-model pages on https://docs.mistral.ai/models/ and the
 // MistralChatModelId union in @ai-sdk/mistral@4.0.71; contextTokens from those pages: Mistral Large 4 = 1M,
-// Mistral Medium 3.5 = 256k, Mistral Small 4 (mistral-small-2603) = 256k. The installed @ai-sdk/mistral@4.0.42
-// matches the @ai-sdk/provider of ai@7.0.97 (newer ones do not type-check against it); its union predates
-// the first two ids, which it passes through unchanged.
+// Mistral Medium 3.5 = 256k, Mistral Small 4 (mistral-small-2603) = 256k.
 export const MODELS: readonly ModelSpec[] = [
   { id: 'claude-opus-5', provider: 'anthropic', label: 'Claude Opus 5', contextTokens: 1_000_000 },
   { id: 'claude-sonnet-5', provider: 'anthropic', label: 'Claude Sonnet 5', contextTokens: 1_000_000 },
