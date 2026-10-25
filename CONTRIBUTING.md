@@ -9,7 +9,7 @@ Open an [issue](https://github.com/FabianGlueck/chatmind/issues/new/choose). For
 ## Development setup
 
 ```bash
-nvm use              # Node 22.22+ (see .nvmrc)
+nvm use              # Node 24 (see .nvmrc); 22.22+ is supported
 pnpm install
 pnpm dev             # API on :3210 + Vite on :5173
 ```
