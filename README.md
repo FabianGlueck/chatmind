@@ -1,168 +1,120 @@
 # chatmind
 
-Non-linear chat over an Obsidian vault: every message is a node on a canvas, replies can branch from any node, branches can be merged. Storage is a plain folder that Obsidian opens as a vault.
+[![CI](https://github.com/FabianGlueck/chatmind/actions/workflows/ci.yml/badge.svg)](https://github.com/FabianGlueck/chatmind/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Status: personal project, under active development (milestone M17 — editing cards). Expect rough edges; the vault format is stable (see the design spec).
+**Non-linear chat with LLMs, stored as plain Markdown in an Obsidian vault.**
 
-Requirements: Node 22.22+, pnpm, and an API key for at least one of Anthropic, OpenAI or OpenRouter. Obsidian is optional — it is only needed to browse the vault outside the app.
+Every message is a card on a canvas. Reply to any card to branch off, merge branches back together, and see exactly which cards the model gets as context. A background indexer summarises each card, groups cards into topics, links related answers across canvases and keeps a short memory per topic. Everything lives in a plain folder — one Markdown file per message plus a JSON Canvas — that Obsidian opens as a vault.
 
-## Setup
+![chatmind: a branching conversation on the canvas, with the context thread, topics and a topic memory](docs/screenshot.png)
+
+## Features
+
+- **Branch anywhere** — reply to any card, not just the last one; every strand keeps its own context.
+- **Merge** — select several cards as targets and ask one question across all of them.
+- **Visible context** — the cards that go to the model are marked and joined by a thread, each with its token count; exclude any of them with one key.
+- **Files are the truth** — one Markdown file per message with YAML frontmatter, plus a standard [JSON Canvas](https://jsoncanvas.org/) file. Edit them in Obsidian and chatmind follows live.
+- **Topics, summaries and links** — an optional indexer gives every card a short summary and a topic, colours the canvas by topic, turns it into a topic map when you zoom out, and shows related answers across canvases.
+- **Topic memories** — the facts and decisions of each topic are distilled into an editable memory that can go into the system prompt.
+- **Notes, images, editing** — put plain notes on the canvas, paste screenshots into questions, edit any card by hand or let a model rewrite it (you accept or discard the preview).
+- **Chat view** — read any strand as a plain linear chat and switch branches at forks.
+- **Several providers** — Anthropic, OpenAI and OpenRouter.
+- **Local-first** — the server binds to `127.0.0.1`; your messages go only to the model provider you pick.
+
+## Quick start
+
+Requirements: [Node.js](https://nodejs.org/) 22.22+ and [pnpm](https://pnpm.io/), plus an API key for at least one of Anthropic, OpenAI or OpenRouter. [Obsidian](https://obsidian.md/) is optional.
 
 ```bash
-nvm use            # Node 22.22+ (see .nvmrc)
+git clone https://github.com/FabianGlueck/chatmind.git
+cd chatmind
 pnpm install
-pnpm test
+
+mkdir -p ~/.config/chatmind
+echo 'ANTHROPIC_API_KEY=sk-ant-...' >> ~/.config/chatmind/env
+
+pnpm build && pnpm start      # → http://localhost:3210
 ```
 
-## Run
+For development, `pnpm dev` runs the API on :3210 and Vite on :5173 (open http://localhost:5173).
+
+Your conversations are stored in `~/Documents/chatmind` (change it with `--data-dir` or `CHATMIND_DATA_DIR`). To browse them in Obsidian, choose "Open folder as vault" on that folder.
+
+To try it with sample data first:
 
 ```bash
-pnpm dev             # API on :3210 + Vite on :5173 — open http://localhost:5173
-pnpm build && pnpm start   # single process on :3210 serving the built frontend
+pnpm cli import-transcript apps/cli/fixtures/transcript.json --canvas demo --data-dir /tmp/chatmind-demo
+pnpm build && pnpm start --data-dir /tmp/chatmind-demo
 ```
 
-Keyboard: ↑↓←→ move between nodes, Space add/remove the node as a merge target (or exclude a highlighted ancestor), Enter → composer, ⏎ send / ⇧⏎ newline, Esc clear selection / back to graph, ⇧⇥ + ←→ change model. ⇧-click adds a target with the mouse.
+## Configuration
 
-Arranging and deleting (M8): drag a card to move it; ⌘-click (Ctrl elsewhere) or ⌘-drag on the empty canvas builds a move selection that drags together. Delete/Backspace (or "Delete turn" in the panel) removes the cursor's turn — question and answer together — or every turn in the move selection, after a confirmation. The files go to `<data-dir>/.trash/`; whatever hung below the turn is reconnected to what was above it. Positions are written to `graph.canvas` (x/y only), so Obsidian shows the same layout. A card that is still streaming cannot be moved or deleted.
+Settings are read from the environment, then from `~/.config/chatmind/env` (one `KEY=VALUE` per line; the file is named `env`, not `.env`). API keys never go into the data folder.
 
-Chat view (M9): press V (or use the Canvas | Chat switch) to read the cursor's strand as a plain chat — root to cursor, then on to the end along the branch you last took there (otherwise the newest). ‹ 1/2 › and ←/→ switch branches at a fork, ↑/↓ walk the strand, merged-in branches sit as collapsed blocks before the merge message. Cursor, merge targets, composer and all keys are shared with the canvas; the view is kept in the URL (`view=chat`).
+| Variable | Default | Purpose |
+|---|---|---|
+| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY` | — | Provider keys. At least one is needed; the composer lists only models whose key is present. |
+| `CHATMIND_DATA_DIR` | `~/Documents/chatmind` | Where the vault lives (`--data-dir` overrides it). |
+| `CHATMIND_PORT` | `3210` | Server port (`--port` overrides it). |
+| `CHATMIND_NO_INDEX` | off | `1` turns the background indexer off (same as `--no-index`). |
+| `CHATMIND_SUMMARY_MODEL` | `openai/gpt-5.6-luna` | OpenRouter model for summaries, topic names and memories. |
+| `CHATMIND_EMBED_MODEL`, `CHATMIND_EMBED_DIM` | `openai/text-embedding-3-small`, `1536` | OpenRouter embedding model and its dimension. |
 
-Images (M13): paste a screenshot into the composer (⌘V), drop image files onto it or pick them with 📎 — PNG, JPEG, GIF or WebP, at most 6 per message; large images are scaled down to 2048 px in the browser. They are written to `<canvas>/attachments/<ULID>.<ext>` and embedded at the end of the question as `![[<ULID>.png]]`, so Obsidian shows them too. Every later message in that strand sends them to the model again (≈ 1.6k tokens each in the counter). Attachment files are never deleted: after a delete or compress they stay in `attachments/`.
+The indexer runs only with an `OPENROUTER_API_KEY`. Topic and link thresholds can be tuned too — see [docs/indexing.md](docs/indexing.md).
 
-New strands next to their topic (M14): a new root message (nothing selected) that clearly belongs to a topic of the canvas starts right of that topic's cards (or below them, when the right is taken) instead of at the far right. The server embeds the question when it is sent (with the indexer on) and compares it with the topic centres; when that is unclear — short or misspelled questions — the summary model decides from the topic names and examples (about 1–2 s before the card appears). A question that fits no topic, or a provider that is too slow, keeps the old placement. Nothing already on the canvas moves.
+## How it works
 
-Topic memories (M15): with the indexer on, every topic of a canvas gets a memory — short bullets with the facts and decisions from its turns (about you, your project, what was settled), in `<canvas>/memories/<topic>.md`, visible in Obsidian. The indexer only ever appends to it; edit it freely in the right panel (the memory of the selected card's topic, or of the active topic) or in Obsidian. In the composer, the memory of the reply target's topic is preselected as part of the system prompt (✕ to drop it, "+ Memory" to add another topic's); a new strand starts without. `pnpm cli index status` shows memories and pending ones.
+```
+~/Documents/chatmind/
+├── <canvas>/
+│   ├── graph.canvas          # JSON Canvas 1.0: positions; edges derived from frontmatter
+│   ├── nodes/
+│   │   └── <ULID>-<slug>.md  # one message: frontmatter (id, role, parents, summary, topics…) + body
+│   ├── attachments/          # pasted images
+│   └── memories/<topic>.md   # topic memories
+├── .trash/                   # deleted and compressed turns (never unlinked)
+└── .app/index.db             # derived SQLite index — safe to delete, rebuilt on start
+```
 
-## API keys
+A message's `parents` in its frontmatter is the only source of structure; the canvas file only adds layout. The SQLite index is derived and disposable. The full format is specified in [the vault format design](docs/superpowers/specs/2026-09-11-chatmind-vault-format-design.md).
 
-chatmind reads `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` and `OPENROUTER_API_KEY` from the environment, falling back to `~/.config/chatmind/env` (the file name is `env`, not `.env`; one `KEY=VALUE` per line). At least one is needed to chat; the composer lists only models whose provider key is present. Keys never go into the data folder.
+The repo is a pnpm monorepo:
 
-## Index (M5–M7)
-
-With an `OPENROUTER_API_KEY` the server runs a background indexer: every node gets a short `summary` (1–3 sentences, ≤ 250 characters; the canvas cards show only this, the panel shows summary and full text)
-(written into its frontmatter; the file is renamed once from `<ULID>.md` to `<ULID>-<slug>.md`) and an
-embedding in `<data dir>/.app/index.db`. The database is derived and disposable — delete it (all three files:
-`index.db`, `index.db-wal`, `index.db-shm` — the latter two are SQLite's write-ahead log and exist while
-the server has the database open) and restart to rebuild. The browser follows every change on disk (including edits in Obsidian) through `/api/events`.
-
-- Models: `CHATMIND_SUMMARY_MODEL` (default `openai/gpt-5.6-luna`), `CHATMIND_EMBED_MODEL`
-  (default `openai/text-embedding-3-small`) and `CHATMIND_EMBED_DIM` (default `1536`), in the
-  environment or `~/.config/chatmind/env`.
-- `--no-index` (or `CHATMIND_NO_INDEX=1`) runs the server without the indexer; the watcher and
-  `/api/events` stay on.
-- `pnpm cli index status [--data-dir <path>]` reports per canvas how many nodes are embedded and
-  summarized and what is pending — no network, no writes.
-- A summary you edit by hand is never overwritten; a body you edit gets a new embedding and, if the
-  summary was generated, a new summary.
-
-### Topics (M6)
-
-The same indexer gives every node exactly one **topic** — a short name in the frontmatter's `topics:`,
-visible in Obsidian. A node is filed by the similarity of its embedding to the topics already on its
-canvas, with a head start for the topic of its primary parent (`parents[0]`), so a chain that stays on
-one subject keeps its topic; when nothing fits or two topics are equally close, the summary model names
-the topic instead. The first node of a canvas always founds the first topic. Topics are per canvas and
-are never re-assigned retroactively: the indexer only fills a `topics:` that is empty.
-
-- **Correcting a topic:** edit `topics:` in Obsidian — your value is never overwritten. **Re-assigning:**
-  blank it (`topics: []`) and the indexer assigns again on its next run, without re-embedding.
-- User messages are judged together with their assistant reply (mean of both embeddings); a user node
-  without a reply yet waits two minutes and is then judged alone. Waiting nodes show up as
-  `pending topics` in `pnpm cli index status`.
-- **In the browser:** each topic gets one of ten muted colours — a coloured left border and the topic
-  name in the card header, the same colour on the panel's topic pill. The sidebar lists the canvas's
-  topics with a colour dot and a node count; clicking one dims every other node and fits the camera to
-  that topic's nodes. Click again or press `Esc` to turn the highlight off (`Esc` clears the highlight
-  first, the selection on the next press). The highlight is purely visual — selection, composer targets
-  and the LLM context are untouched.
-- **Calibration:** `pnpm cli index topics --dry-run [--data-dir <path>]` replays the assignment
-  read-only against the stored vectors — no network, no writes. It prints the vault's
-  vector count, the embedding dimension and whether mean-centring is on (it needs 8 vectors), then per
-  canvas its known topics, the number of candidates (nodes with an empty `topics:`) and how many are
-  deferred, and per candidate a line
-  `<node id> <role> parent <the primary parent's topic> | <top-3 topics with their cosine similarity> | → <decision>`,
-  where the decision is `assign <topic>` (no model call) or `would ask [<candidates>]` (the namer would
-  decide). It also prints the thresholds in force, so a dry run and the indexer can never disagree. Every candidate is judged against the topics already in the vault —
-  the dry run does not simulate the topics a real run would found along the way, so a whole strand
-  without topics shows up as `would ask`. This makes it a smoke test, not calibration, on a vault with
-  no topics yet (nothing to compare against, so every line prints `(no topics) | → would ask []`); run
-  it after topics exist — e.g. right after blanking a strand's `topics:` — to read real similarities.
-- **Tuning:** four environment variables move the thresholds (defaults in brackets):
-  `CHATMIND_TOPIC_INHERIT` [0.15] — how similar a node must be to its parent's topic to inherit it. This
-  is the knob for granularity: raise it and strands break off into new topics sooner.
-  `CHATMIND_TOPIC_INHERIT_MARGIN` [0.05] — how far the parent's topic may trail the best one and still win.
-  `CHATMIND_TOPIC_ASSIGN` [0.35] — the similarity above which a topic is assigned without asking the model.
-  `CHATMIND_TOPIC_ASSIGN_MARGIN` [0.10] — how far ahead of the runner-up that best topic must be.
-  A value that is not a number, is empty, or lies outside `[-1, 1]` (or is negative for a margin) falls back
-  to the default; the startup line names every threshold that differs, so a typo is visible. Set them in the
-  environment or in `~/.config/chatmind/env` (`KEY=VALUE` per line, the same file as the API key) — the server
-  and `index topics --dry-run` read both, environment first, so the dry run can never calibrate against
-  different values than the indexer uses.
-- **Re-assigning after tuning:** `pnpm cli index retopic --canvas <slug> [--data-dir <path>]` blanks
-  `topics:` on exactly the nodes whose topic the indexer wrote (`topic_written` in `index.db`) and leaves
-  yours untouched. It calls no model; the running indexer notices the change and assigns again. Set the
-  environment and restart the server **first** — otherwise the still-running indexer re-assigns with the
-  old values. Topics never change retroactively on their own, so this is the only way to re-cut a canvas.
-- The first indexed run writes `topics:` into every node still at `topics: []`, and rewrites each such
-  file's frontmatter down to the canonical eight keys (`id, canvas, role, model, parents, created,
-  summary, topics`) — any other key you added in Obsidian is dropped. Check for extra frontmatter keys
-  before the first indexed start if that matters to you.
-- `index.db` from M5 migrates in place (schema 1 → 2 adds one column); embeddings and summaries are
-  kept, nothing is re-embedded. Deleting `index.db` and restarting re-embeds the vault but changes
-  **no** `summary:` and **no** `topics:` in it — the files are the truth.
-
-### Semantic links (M7)
-
-- **What:** select a node and chatmind shows the answers that are related to it by content but not by
-  structure. Two answers are linked when each is among the other's `k` nearest (cosine over the
-  mean-centred embeddings) and their *score* reaches a threshold. The score is the similarity corrected for
-  hubs: an answer that resembles everything around it (common in a canvas where every note has the same
-  theme) has its links discounted, so that only pairs that stand out survive. That correction applies only
-  within a canvas: across canvases the plain similarity counts, because there the shared theme is what you
-  want to be pointed to. The node's own ancestors and
-  descendants never count, but siblings do. Only assistant answers take part; selecting a user message
-  shows the links of its first answer.
-- **In the browser:** links within the canvas are dashed magenta edges from the selected answer, fainter
-  the weaker the link. The panel's **Related** section lists every link, other canvases included, with its
-  score. Clicking an entry selects it, and one in another canvas opens that canvas on it. The
-  browser's Back button returns to where you were, because every canvas switch (the sidebar's too) is now
-  a history entry, and the URL carries `?canvas=…&node=…`.
-- Nothing is stored. The server computes links per request from `index.db` over its own read-only
-  connection, so they also work with `--no-index` as long as an index exists. A new answer gets links
-  once it is embedded.
-- **Calibration:** `pnpm cli index links --dry-run [--k <n>] [--min <score>] [--data-dir <path>]`
-  prints every link in the vault once, grouped by canvas (`<score> (cos <raw similarity>)  <summary> ↔ <summary> [other canvas]`),
-  and totals: links, participants, participants without a link, and links per participant. `--k` and `--min`
-  try values without touching the environment.
-- **Tuning:** `CHATMIND_LINK_K` [5], the number of nearest neighbours each side may have (at most that many
-  links per answer), and `CHATMIND_LINK_MIN` [0.30], the minimum score. Set them in the environment or
-  in `~/.config/chatmind/env`. Invalid values fall back to the default, and the startup line names any value
-  that differs.
+| Package | |
+|---|---|
+| `packages/core` | Pure logic: graph, context assembly, vault reader/writer |
+| `packages/index` | Background indexer: summaries, embeddings (SQLite + sqlite-vec), topics, links, memories |
+| `apps/server` | [Hono](https://hono.dev/) API with SSE streaming via the [Vercel AI SDK](https://ai-sdk.dev/) |
+| `apps/web` | Vite + React 19 + [React Flow](https://reactflow.dev/) frontend |
+| `apps/cli` | Import, consistency check and indexer diagnostics |
 
 ## CLI
 
 ```bash
-pnpm cli import-transcript apps/cli/fixtures/transcript.json --canvas masterarbeit
-pnpm cli check       # exit 0 = clean, 3 = repairs pending
-pnpm cli index status [--data-dir <path>]
-pnpm cli index topics --dry-run [--data-dir <path>]
-pnpm cli index retopic --canvas <slug> [--data-dir <path>]
-pnpm cli index links --dry-run [--k <n>] [--min <score>] [--data-dir <path>]
+pnpm cli import-transcript <file.json> --canvas <slug>   # import a linear chat
+pnpm cli check                                           # exit 0 = clean, 3 = repairs pending
+pnpm cli index status                                    # what is embedded, summarised, pending
+pnpm cli index topics --dry-run                          # replay topic assignment read-only
+pnpm cli index retopic --canvas <slug>                   # re-assign indexer-written topics
+pnpm cli index links --dry-run [--k <n>] [--min <score>] # print all semantic links
 ```
 
-The data folder is `~/Documents/chatmind` (override with `--data-dir` or `CHATMIND_DATA_DIR`). Open it in Obsidian with "Open folder as vault".
+Every command takes `--data-dir <path>`.
 
-## Docs
+## Documentation
 
-- Design: `docs/superpowers/specs/2026-09-11-chatmind-vault-format-design.md`
-- M4 design: `docs/superpowers/specs/2026-09-13-chatmind-m4-merge-design.md`
-- M5 design: `docs/superpowers/specs/2026-09-18-chatmind-m5-index-design.md`
-- M6 design: `docs/superpowers/specs/2026-09-21-chatmind-m6-topics-design.md`
-- Plans: `docs/superpowers/plans/`
+- [Using chatmind](docs/usage.md) — keyboard, merging, chat view, notes, editing, compressing and more
+- [The indexer](docs/indexing.md) — summaries, topics, semantic links, calibration and tuning
+- [Design specs](docs/superpowers/specs/) and [implementation plans](docs/superpowers/plans/) — one per milestone; [notes](docs/superpowers/notes/) hold findings from testing
+
+## Status
+
+chatmind is a personal project under active development. The vault format is stable, but expect rough edges and changes in the UI. Data stays in plain files, so you can always read your conversations in Obsidian or any editor.
 
 ## Contributing
 
-Issues and pull requests are welcome. Before opening a PR, run `pnpm typecheck && pnpm test`. Design decisions and invariants are documented in `docs/superpowers/specs/` and summarised in `CLAUDE.md` — changes that would break one of the vault invariants need a discussion first.
+Issues and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). To report a security issue, see [SECURITY.md](SECURITY.md).
 
 ## License
 

@@ -1,0 +1,30 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Select a card …
+        2. Press …
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      description: OS, browser, Node version, provider/model
+      placeholder: macOS 26, Safari, Node 22.23, Claude Opus 5 via OpenRouter
+  - type: textarea
+    id: logs
+    attributes:
+      label: Server output / `pnpm cli check` output
+      description: Please remove API keys and anything private.
+      render: text
