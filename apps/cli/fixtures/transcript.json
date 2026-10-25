@@ -1,0 +1,31 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Ich schreibe meine Masterarbeit über Topic-Zuordnung in Chat-Graphen. Wie evaluiere ich, ob ein neuer Node dem richtigen Topic zugeordnet wurde?",
+      "summary": "Wie evaluiert man Topic-Zuordnung in Chat-Graphen?"
+    },
+    {
+      "role": "assistant",
+      "model": "claude-sonnet-4-6",
+      "content": "Zwei gängige Wege:\n\n1. **Gold-Labels**: Du annotierst eine Stichprobe von Hand und misst Precision/Recall pro Topic.\n2. **Konsistenz**: Du prüfst, ob strukturell benachbarte Nodes (Parent/Child) meist dasselbe Topic tragen.\n\nFür eine Masterarbeit brauchst du (1) als Hauptmetrik; (2) ist ein günstiger Plausibilitätscheck.",
+      "summary": "Zwei Optionen: Gold-Labels oder strukturelle Konsistenz"
+    },
+    {
+      "role": "user",
+      "content": "Und wenn sich die Topics im Laufe der Zeit verschieben? Bei Re-Clustering ändert sich ja rückwirkend die Zuordnung.",
+      "summary": "Problem: Re-Clustering ändert Zuordnungen rückwirkend"
+    },
+    {
+      "role": "assistant",
+      "model": "claude-sonnet-4-6",
+      "content": "Genau deshalb ist Re-Clustering für interaktive Systeme ungeeignet. Ein **Zentroid-Ansatz** vermeidet das: jedes Topic hat einen Zentroid, neue Nodes werden per Kosinus-Ähnlichkeit zugeordnet, der Zentroid wird als laufender Mittelwert aktualisiert. Bestehende Zuordnungen bleiben stabil.\n\nWichtig: innerhalb eines engen Themas komprimieren sich alle Ähnlichkeiten in ein schmales Band (0,75–0,9). Du musst vor dem Vergleich den Canvas-Zentroid abziehen (Mean-Centering).",
+      "summary": "Zentroid-Ansatz mit Mean-Centering skaliert besser als Re-Clustering"
+    },
+    {
+      "role": "user",
+      "content": "Danke, das nehme ich als Grundlage für Kapitel 4.",
+      "summary": "Zentroid-Ansatz wird Grundlage für Kapitel 4"
+    }
+  ]
+}

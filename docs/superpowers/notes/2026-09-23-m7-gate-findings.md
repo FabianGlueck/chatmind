@@ -1,0 +1,12 @@
+# M7 manual gate findings — 2026-09-24
+
+- Run by: the user, on their own vault with the running `pnpm dev`.
+- Code under test: `main` at `8d1ce4e` when the user reported the result (spec `docs/superpowers/specs/2026-09-23-chatmind-m7-semantic-links-design.md`, no plan document by the user's choice, notes `2026-09-23-m7-implementation-notes.md`). Typecheck clean, 480 tests green (core 167, index 124, cli 17, server 67, web 105).
+- Done condition (spec §1): the links are useful; the edges follow the selection; a cross-canvas jump lands on the node and Back returns; `graph.canvas` and frontmatter stay untouched. **Reported by the user as passed ("gate ist durch").** The checklist items were not itemised in the report. The link settings in force are the defaults (`k 5`, `min 0.30`); the last dry run on the user's vault printed `settings: defaults`, and the user named no other values.
+- Issues found around the gate, all fixed before the report:
+  - `EADDRINUSE` on 3210 when restarting `pnpm dev`: a `tsx watch` child from the previous day had lost its parent and still held the port, never signalled. The server now exits when orphaned in dev (`--exit-with-parent`), releases the port first on shutdown with a 12 s hard exit, names the holder's pid on `EADDRINUSE`, and starts the indexer only once the port is bound (`8ca394e`). How `tsx` lost the child was not reproduced.
+  - The user found the links in the homogeneous `hugginface` canvas of little use (14 links, 12 of them only "this is about Hugging Face"). Measured on their vault; canvas-mean centring and a per-canvas z-score threshold were tried and rejected. A hub-corrected score (CSLS, `2·sim − r(a) − r(b)`) replaced the raw threshold: `hugginface` 14 → 2 links, the repeated quantisation-maths question and its neighbour (`62f92bd`).
+  - That correction also removed the links from the Hugging Face answer in `masterarbeit` into `hugginface`, which the user wanted kept: across canvases the shared theme is the news. The correction now applies only within a canvas; cross-canvas pairs use the raw similarity. The 3 links came back (0.40, 0.40, 0.32), and the vault has 14 links in total (`48fa9a8`, docs `8d1ce4e`).
+  - The "Related" list is pinned below the scrolling panel body instead of at the end of it (`a7ea196`, the user's request).
+- Observed, no change: the link edges were never seen by the agent in a real browser (jsdom draws no React Flow edges); the user raised no issue with them.
+- Verdict: M7 done condition met. This completes the cycle-1 roadmap (§13 M0–M7).

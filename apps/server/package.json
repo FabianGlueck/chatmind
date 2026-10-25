@@ -1,0 +1,23 @@
+{
+  "name": "@chatmind/server",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts --exit-with-parent",
+    "start": "tsx src/index.ts --static ../web/dist",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.52",
+    "@ai-sdk/openai": "^4.0.65",
+    "@chatmind/core": "workspace:*",
+    "@chatmind/index": "workspace:*",
+    "@hono/node-server": "^2.1.1",
+    "@openrouter/ai-sdk-provider": "^3.0.0",
+    "ai": "^7.0.97",
+    "hono": "^4.13.7"
+  }
+}

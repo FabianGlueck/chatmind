@@ -1,0 +1,5 @@
+- [x] chatmode, wo man einen strang dann als normalen chat sieht — M9, 0a81fce (Chat-Ansicht des aktuellen Strangs, umschaltbar per `V`)
+- [x] ich will das mann die Zettel auf dem Canvas verschieben kann — M8, fcc6255 (verschieben einzeln und per ⌘-Mehrfachauswahl; dazu Löschen ganzer Turns)
+- [x] bild upload, screenshot einfügen — M13, 2ac142c (einfügen per ⌘V, Drag & Drop oder 📎; Bilder gehen ans LLM)
+- [ ] tool-use: das llm soll echte tools aufrufen können (function calling, z.B. web-suche, code ausführen) — nach m5
+- [x] inhalte auf den canvas legen, ohne dass sie direkt ans llm gehen (z.B. ein dokument oder kopierter text aus einer anderen quelle) — liegen erstmal nur da; man kann dann nodes andocken und fragen dazu stellen — M16, 96e8417 (Notizen: „+ Note“, ⌘V auf dem Canvas oder .md/.txt reinziehen; bearbeitbar im Panel)

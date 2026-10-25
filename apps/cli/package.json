@@ -1,0 +1,16 @@
+{
+  "name": "@chatmind/cli",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@chatmind/core": "workspace:*",
+    "@chatmind/index": "workspace:*"
+  }
+}
