@@ -11,7 +11,7 @@ export { watchVault, slugOf, type VaultWatcher } from './watcher';
 export { Indexer, type IndexerOptions } from './indexer';
 export { MIN_CENTER, INHERIT_MARGIN, T_INHERIT, T_ASSIGN, ASSIGN_MARGIN, meanVector, centre, cosine, TopicCentroids, assignTopic, type Sim, type Decision, type Thresholds } from './topics';
 export { DEFAULT_THRESHOLDS, topicSettings, describeThresholds } from './topic-settings';
-export { defaultEnvFile, parseEnvFile, loadEnv } from './env-file';
+export { defaultEnvFile, parseEnvFile, loadEnv, updateEnvFile, writeEnvFile } from './env-file';
 export { TOPIC_MAX, TOPIC_SYSTEM, topicPrompt, cleanTopic, topicKey, foldTopic } from './topics';
 export { LINK_K, T_LINK, linkSpace, mutualLinks, allLinks, vaultLinks, type Link, type LinkSpace, type VaultLinks, type LinkSettings } from './links';
 export { DEFAULT_LINK_SETTINGS, linkSettings, describeLinkSettings } from './link-settings';
