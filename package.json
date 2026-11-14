@@ -13,7 +13,9 @@
     "cli": "pnpm --filter @chatmind/cli run start",
     "build": "pnpm --filter @chatmind/web build",
     "dev": "pnpm -r --parallel run dev",
-    "start": "pnpm --filter @chatmind/server start"
+    "start": "pnpm --filter @chatmind/server start",
+    "desktop": "pnpm --filter @chatmind/desktop start",
+    "desktop:dist": "pnpm --filter @chatmind/desktop dist"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

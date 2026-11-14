@@ -34,7 +34,7 @@ export function slug(text: string): string {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/^-|-$/g, ''); // runs are already one dash; no quantifier keeps this linear on file names
   if (dashed.length <= SLUG_MAX) return dashed;
   const cut = dashed.slice(0, SLUG_MAX);
   if (dashed[SLUG_MAX] === '-') return cut;

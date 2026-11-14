@@ -1,0 +1,26 @@
+{
+  "name": "@chatmind/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "chatmind as a desktop app",
+  "scripts": {
+    "bundle": "node scripts/build.mjs",
+    "pack": "pnpm --filter @chatmind/web build && node scripts/build.mjs && electron-builder --config electron-builder.config.cjs --dir",
+    "start": "pnpm run pack && node scripts/open.mjs",
+    "dist": "pnpm --filter @chatmind/web build && node scripts/build.mjs && electron-builder --config electron-builder.config.cjs",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@chatmind/core": "workspace:*",
+    "@chatmind/index": "workspace:*",
+    "@chatmind/server": "workspace:*"
+  },
+  "devDependencies": {
+    "electron": "45.3.1",
+    "electron-builder": "26.18.0",
+    "esbuild": "0.28.2"
+  }
+}

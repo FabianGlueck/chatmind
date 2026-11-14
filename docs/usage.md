@@ -50,6 +50,16 @@ On a card inside an unbranched stretch of at least two turns, "Compress strand" 
 
 Every card — question, answer or note — can be edited by hand in the panel or the chat view (the old text is overwritten, not kept). In the composer's **Edit** mode (or with E) you tell the model what to change instead; its rewrite streams into a preview that is written only when you accept it. A card's title (its summary) is editable in the panel as well.
 
+## Desktop app
+
+`pnpm desktop` builds `chatmind.app` and opens it. `pnpm desktop:dist` also makes a `.dmg` and `.zip` under `apps/desktop/release/`. The app runs its own server on `127.0.0.1:3211`, or the next free port up to 3220, so it can stay open next to a `pnpm start` on 3210 — as long as the two use different data folders.
+
+- **Settings (⌘,)** — data folder, API keys and whether this computer runs the indexer. Keys are never shown again, only whether one is set: type a new one to replace it, or click "Remove". A value set as an environment variable wins and is shown read-only. Saving writes `~/.config/chatmind/env` and restarts the server; the window reloads.
+- **File menu** — "Open Data Folder" shows it in Finder; "Open in Obsidian" opens it as a vault.
+- **Log** — Help → Show Log File (`~/Library/Logs/chatmind/chatmind.log`) has the server's and the indexer's output.
+- **Unsigned** — the first time, right-click the app → Open (or `xattr -dr com.apple.quarantine chatmind.app`).
+- Only one copy of the app runs at a time; launching it again brings the open window to the front.
+
 ## Syncing with Obsidian Sync
 
 The data folder is a normal Obsidian vault, so Obsidian Sync can keep it in step across computers. Turn Sync on for that vault in Obsidian and point chatmind on every computer at its local copy (`--data-dir` or `CHATMIND_DATA_DIR`). Sync only runs while Obsidian has the vault open.

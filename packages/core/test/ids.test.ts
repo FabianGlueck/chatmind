@@ -12,6 +12,7 @@ describe('slug', () => {
   });
   it('strips other diacritics', () => {
     expect(slug('Café résumé')).toBe('cafe-resume');
+    expect(slug(`${'-'.repeat(100_000)}a${' -'.repeat(100_000)}`)).toBe('a'); // long runs: linear, trimmed
   });
   it('collapses punctuation and trims dashes', () => {
     expect(slug('  Hallo: Welt!! ')).toBe('hallo-welt');

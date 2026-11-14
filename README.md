@@ -48,6 +48,18 @@ pnpm cli import-transcript apps/cli/fixtures/transcript.json --canvas demo --dat
 pnpm build && pnpm start --data-dir /tmp/chatmind-demo
 ```
 
+## Desktop app (macOS)
+
+chatmind also runs as a desktop app: the same server and UI in a native window, with no terminal needed afterwards.
+
+```bash
+pnpm install
+pnpm desktop        # builds and opens apps/desktop/release/mac-*/chatmind.app
+pnpm desktop:dist   # also makes a .dmg and .zip under apps/desktop/release/
+```
+
+On first launch the settings window (⌘,) asks for an API key. It also picks the data folder and turns the indexer on or off for this computer. Everything is saved to `~/.config/chatmind/env`, the same file `pnpm start` and the CLI read. The app is not signed yet: copy `chatmind.app` to `/Applications`, then right-click → Open the first time. Don't run the app and `pnpm start` on the same data folder at once — that means two indexers. Details: [docs/usage.md](docs/usage.md#desktop-app).
+
 ## Configuration
 
 Settings are read from the environment, then from `~/.config/chatmind/env` (one `KEY=VALUE` per line; the file is named `env`, not `.env`). API keys never go into the data folder.
@@ -55,7 +67,7 @@ Settings are read from the environment, then from `~/.config/chatmind/env` (one 
 | Variable | Default | Purpose |
 |---|---|---|
 | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `MISTRAL_API_KEY`, `OPENROUTER_API_KEY` | — | Provider keys. At least one is needed; the composer lists only models whose key is present. |
-| `CHATMIND_DATA_DIR` | `~/Documents/chatmind` | Where the vault lives (`--data-dir` overrides it). |
+| `CHATMIND_DATA_DIR` | `~/Documents/chatmind` | Where the vault lives (`--data-dir` overrides it; the desktop app's settings write it). |
 | `CHATMIND_PORT` | `3210` | Server port (`--port` overrides it). |
 | `CHATMIND_NO_INDEX` | off | `1` turns the background indexer off (same as `--no-index`). |
 | `CHATMIND_SUMMARY_MODEL` | `openai/gpt-5.6-luna` | OpenRouter model for summaries, topic names and memories. |
@@ -88,6 +100,7 @@ The repo is a pnpm monorepo:
 | `apps/server` | [Hono](https://hono.dev/) API with SSE streaming via the [Vercel AI SDK](https://ai-sdk.dev/) |
 | `apps/web` | Vite + React 19 + [React Flow](https://reactflow.dev/) frontend |
 | `apps/cli` | Import, consistency check and indexer diagnostics |
+| `apps/desktop` | [Electron](https://www.electronjs.org/) app: the server in the main process, the web UI in a window, a settings window |
 
 ## CLI
 
