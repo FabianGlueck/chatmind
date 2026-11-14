@@ -1,5 +1,7 @@
 import path from 'node:path';
 import { parseArgs } from 'node:util';
+import { resolveDataDir } from '@chatmind/core';
+import { loadEnv } from '@chatmind/index';
 import { check } from './check';
 import { importTranscript } from './import-transcript';
 import { indexStatus } from './index-status';
@@ -15,7 +17,7 @@ const USAGE = `usage:
   chatmind index retopic --canvas <slug> [--data-dir <path>]
   chatmind index links --dry-run [--k <n>] [--min <similarity>] [--data-dir <path>]
 
-data dir: --data-dir, else $CHATMIND_DATA_DIR, else ~/Documents/chatmind`;
+data dir: --data-dir, else CHATMIND_DATA_DIR (environment, then ~/.config/chatmind/env), else ~/Documents/chatmind`;
 
 // pnpm runs package scripts with cwd = the package dir; INIT_CWD is where the user actually typed the command.
 const invokedFrom = process.env.INIT_CWD ?? process.cwd();
@@ -27,7 +29,8 @@ async function main(argv: string[]): Promise<number> {
     options: { canvas: { type: 'string' }, 'data-dir': { type: 'string' }, 'dry-run': { type: 'boolean' }, k: { type: 'string' }, min: { type: 'string' } },
   });
   const [command, ...rest] = positionals;
-  const dataDir = values['data-dir'] === undefined ? undefined : path.resolve(invokedFrom, values['data-dir']);
+  // Desktop spec §1: the key file may name the data dir too, as the server reads it.
+  const dataDir = values['data-dir'] === undefined ? resolveDataDir(undefined, await loadEnv()) : path.resolve(invokedFrom, values['data-dir']);
 
   switch (command) {
     case 'check':

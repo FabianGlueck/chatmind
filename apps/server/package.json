@@ -4,6 +4,10 @@
   "private": true,
   "license": "MIT",
   "type": "module",
+  "exports": {
+    "./start": "./src/start.ts",
+    "./keys": "./src/keys.ts"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts --exit-with-parent",
     "start": "tsx src/index.ts --static ../web/dist",
