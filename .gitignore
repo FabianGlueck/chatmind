@@ -6,3 +6,5 @@ dist/
 *.tsbuildinfo
 .superpowers/
 env
+apps/desktop/build/
+apps/desktop/release/

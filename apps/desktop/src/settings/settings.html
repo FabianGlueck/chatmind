@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+<title>chatmind Settings</title>
+<style>
+  :root { color-scheme: light dark; --fg: #1d1d1f; --muted: #6e6e73; --line: #d2d2d7; --bg: #f5f5f7; --field: #fff; --accent: #0a66d6; --danger: #c4314b; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #f5f5f7; --muted: #a1a1a6; --line: #424245; --bg: #1c1c1e; --field: #2c2c2e; --accent: #4c9bff; --danger: #ff6b81; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 20px 24px; font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; color: var(--fg); background: var(--bg); }
+  h2 { font-size: 13px; margin: 18px 0 8px; }
+  h2:first-child { margin-top: 0; }
+  .row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .row label { width: 92px; flex: none; }
+  input[type=text], input[type=password] { flex: 1; min-width: 0; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--field); color: var(--fg); font: inherit; }
+  input:disabled { opacity: .6; }
+  button { padding: 5px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--field); color: var(--fg); font: inherit; cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.link { border: none; background: none; color: var(--danger); padding: 5px 4px; }
+  button:disabled { opacity: .5; cursor: default; }
+  .hint { color: var(--muted); font-size: 12px; margin: 0 0 8px; }
+  .path { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; text-align: left; }
+  .check { display: flex; gap: 8px; align-items: flex-start; }
+  footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+  #error { color: var(--danger); margin-top: 12px; min-height: 1em; }
+</style>
+</head>
+<body>
+  <h2>Data folder</h2>
+  <div class="row"><span class="path" id="dataDir"></span><button id="choose">Choose…</button></div>
+  <p class="hint" id="dataHint">Where your canvases live. Open the same folder in Obsidian to read or sync them.</p>
+
+  <h2>API keys</h2>
+  <p class="hint">You need at least one. The indexer (summaries, topics, links) uses OpenRouter.</p>
+  <div id="keys"></div>
+
+  <h2>Indexer</h2>
+  <label class="check"><input type="checkbox" id="index"> <span>Run the indexer on this computer<br><span class="hint" id="indexHint">When the vault is synced to other computers (e.g. with Obsidian Sync), run it on one of them only.</span></span></label>
+
+  <p class="hint" id="envFile" style="margin-top:18px"></p>
+  <div id="error"></div>
+  <footer><button id="cancel">Cancel</button><button id="save" class="primary">Save</button></footer>
+  <script src="settings.js"></script>
+</body>
+</html>
