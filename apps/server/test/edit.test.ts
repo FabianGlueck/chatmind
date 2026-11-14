@@ -157,7 +157,7 @@ describe('POST /api/canvases/:slug/nodes/:id/rewrite (spec M17 §4)', () => {
     const { root, ids } = await vault();
     const app = createApp({ dataDir: root, keys: { anthropic: 'k' }, modelFactory: () => mockModel(['ok']) });
     expect((await rewrite(app, ids[1]!, { instruction: 'x', model: 'nope' })).status).toBe(400);
-    expect((await rewrite(app, ids[1]!, { instruction: 'x', model: 'gpt-6-astra' })).status).toBe(400); // no openai key
+    expect((await rewrite(app, ids[1]!, { instruction: 'x', model: 'gpt-6.1-sol' })).status).toBe(400); // no openai key
     expect((await rewrite(app, ids[1]!, { instruction: '  ', model: 'claude-opus-5' })).status).toBe(400);
     expect((await rewrite(app, ids[1]!, { instruction: 'x', model: 'claude-opus-5', draft: 3 })).status).toBe(400);
     expect((await rewrite(app, '01JQ8F9ZZZZZZZZZZZZZZZZZZZ', { instruction: 'x', model: 'claude-opus-5' })).status).toBe(404);

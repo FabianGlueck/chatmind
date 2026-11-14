@@ -16,6 +16,11 @@ describe('models', () => {
     expect(dtos.some((d) => d.provider === 'anthropic' && !d.available)).toBe(true);
     expect(modelDtos({}).every((d) => !d.available)).toBe(true);
   });
+  it('offers GPT-6.1 Sol instead of Astra, first for OpenRouter so the composer picks it by default', () => {
+    expect(MODELS.some((m) => m.id.includes('astra'))).toBe(false);
+    expect(findModel('gpt-6.1-sol')?.provider).toBe('openai');
+    expect(modelDtos({ openrouter: 'k' }).find((d) => d.available)?.id).toBe('openai/gpt-6.1-sol');
+  });
   it('offers Mistral models directly, available with a Mistral key only', () => {
     expect(findModel('mistral-large-4')?.provider).toBe('mistral');
     const dtos = modelDtos({ mistral: 'k' });
