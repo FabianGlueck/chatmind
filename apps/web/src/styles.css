@@ -475,3 +475,12 @@ img.attachment { display: block; max-width: 100%; max-height: 480px; margin: 0.6
 .edit-preview del { background: var(--danger-soft); color: var(--muted); border-radius: 3px; }
 .edit-preview .memory-actions { margin-top: 0; }
 .edit-preview .btn:disabled { opacity: 0.5; cursor: default; }
+
+/* Spec vault-switcher §6 */
+.vault-switcher { margin: -8px 0 10px; }
+.sidebar .vault-current { font-size: 12px; color: var(--subtle); padding: 4px 8px; }
+.sidebar .vault-caret { margin-left: auto; }
+.vault-panel { margin: 4px 0 6px; padding: 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+.vault-panel p { margin: 0; word-break: break-all; }
+.vault-note { color: var(--subtle); }
+.vault-panel .count { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; }

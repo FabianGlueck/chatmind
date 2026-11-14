@@ -60,6 +60,21 @@ import type { LinkService } from './links';
 import type { TopicPlacer } from './placement';
 import { findModel, isAvailable, modelDtos } from './models';
 import { createModelFactory, type ModelFactory } from './providers';
+import { normalizeDir } from './settings';
+import type { VaultSession } from './session';
+
+/** Spec vault-switcher §5: what `PUT /api/vault` needs; `current` is kept up to date by the app on every switch. */
+export interface VaultHost {
+  current: VaultSession;
+  /** True when `--data-dir` or CHATMIND_DATA_DIR decides the folder on startup (spec §3). */
+  overridden: boolean;
+  open(dir: string): Promise<VaultSession>;
+  recent(): Promise<string[]>;
+  /** Persists `dir` as the chosen folder; returns the new recent list. */
+  remember(dir: string): Promise<string[]>;
+  /** Opens a native folder dialog (macOS only); null = cancelled. Absent where there is none. */
+  pick?: () => Promise<string | null>;
+}
 
 export interface AppOptions {
   dataDir: string;
@@ -77,6 +92,8 @@ export interface AppOptions {
   links?: Pick<LinkService, 'links'>;
   /** Spec M14: places a new strand next to its topic; absent (no indexer) means the old placement. */
   placer?: Pick<TopicPlacer, 'pick'>;
+  /** Spec vault-switcher: lets the UI change the data folder at runtime; absent in tests that need none. */
+  vault?: VaultHost;
 }
 
 /** Read the vault; a missing data dir is an empty vault, everything else propagates. */
@@ -100,12 +117,24 @@ const MIME: Record<string, string> = {
   '.woff2': 'font/woff2',
 };
 
-export function createApp({ dataDir, staticDir, ...options }: AppOptions): Hono {
+export function createApp(options: AppOptions): Hono {
+  const { staticDir } = options;
+  // Spec vault-switcher §5: these follow the live session, so handlers read them at request time.
+  let { dataDir, watcher, indexer, links, placer } = options;
   const app = new Hono();
   const keys = options.keys ?? {};
   const modelFactory = options.modelFactory ?? createModelFactory(keys);
   const lock = options.lock ?? new VaultLock();
-  const { watcher, indexer, links, placer } = options;
+
+  // Spec M5 §7 + vault-switcher: every open /api/events stream registers a sink; the live watcher feeds them all.
+  const sinks = new Set<(event: string, data: unknown) => void>();
+  const publish = (event: string, data: unknown): void => sinks.forEach((sink) => sink(event, data));
+  let unwatch = (): void => undefined;
+  const follow = (): void => {
+    unwatch();
+    unwatch = watcher?.onChange((slugs) => publish('vault-changed', { slugs })) ?? (() => undefined);
+  };
+  follow();
 
   // `c.req.json()` does no content-type check, so a `mode:'no-cors'` cross-site fetch (which cannot set a
   // custom content-type, only text/plain, multipart/form-data, or application/x-www-form-urlencoded) would
@@ -533,14 +562,60 @@ export function createApp({ dataDir, staticDir, ...options }: AppOptions): Hono 
   // Spec M5 §7: one long-lived stream per client; the watcher's debounced batches become vault-changed events.
   app.get('/api/events', (c) =>
     streamSSE(c, async (stream) => {
-      const unsubscribe = watcher?.onChange((slugs) => void stream.writeSSE({ event: 'vault-changed', data: JSON.stringify({ slugs }) }).catch(() => undefined)) ?? (() => undefined);
+      const sink = (event: string, data: unknown): void => void stream.writeSSE({ event, data: JSON.stringify(data) }).catch(() => undefined);
+      sinks.add(sink);
       const keepAlive = setInterval(() => void stream.write(': keep-alive\n\n').catch(() => undefined), KEEP_ALIVE_MS);
       keepAlive.unref(); // never keeps the process (or a vitest worker) alive on its own
       await new Promise<void>((resolve) => stream.onAbort(resolve));
       clearInterval(keepAlive);
-      unsubscribe();
+      sinks.delete(sink);
     }),
   );
+
+  // Spec vault-switcher §4.
+  app.get('/api/vault', async (c) => {
+    const host = options.vault;
+    return c.json({ dataDir, recent: (await host?.recent()) ?? [dataDir], overridden: host?.overridden ?? false, canPick: host?.pick !== undefined });
+  });
+  // One dialog at a time: a second click while Finder's dialog is open must not stack another one.
+  let picking = false;
+  app.post('/api/vault/pick', async (c) => {
+    const pick = options.vault?.pick;
+    if (!pick) return c.json({ error: 'no folder dialog on this platform' }, 404);
+    if (picking) return c.json({ error: 'a folder dialog is already open' }, 409);
+    picking = true;
+    try {
+      return c.json({ dataDir: await pick() });
+    } catch (err) {
+      return c.json({ error: `folder dialog failed: ${err instanceof Error ? err.message : String(err)}` }, 500);
+    } finally {
+      picking = false;
+    }
+  });
+  app.put('/api/vault', async (c) => {
+    const host = options.vault;
+    if (!host) return c.json({ error: 'switching the folder is not available' }, 404);
+    const body = (await c.req.json().catch(() => null)) as { dataDir?: unknown } | null;
+    const dir = typeof body?.dataDir === 'string' ? normalizeDir(body.dataDir) : null;
+    if (dir === null) return c.json({ error: 'dataDir must be an absolute path (or start with ~/)' }, 400);
+    if (jobs.size > 0) return c.json({ error: 'busy' }, 409);
+    if (dir === dataDir) return c.json({ dataDir, recent: await host.recent() });
+    let next: VaultSession;
+    try {
+      next = await host.open(dir); // the old session stays untouched when this fails
+    } catch (err) {
+      return c.json({ error: `cannot use ${dir}: ${err instanceof Error ? err.message : String(err)}` }, 400);
+    }
+    const old = host.current;
+    host.current = next;
+    ({ dataDir, watcher, indexer, links, placer } = next);
+    follow();
+    const recent = await host.remember(dir).catch(() => [dir]);
+    next.start();
+    publish('vault-switched', { dataDir });
+    await old.close().catch((err: unknown) => console.error(`vault: closing the old session failed: ${err instanceof Error ? err.message : String(err)}`));
+    return c.json({ dataDir, recent });
+  });
 
   const OFF: IndexStatus = { enabled: false, running: false, lastRun: null, pending: { embed: 0, summarize: 0, topics: 0, memories: 0 } };
   // Spec M5 §7: what `chatmind index status` (and the UI) polls; disabled when no indexer is wired.

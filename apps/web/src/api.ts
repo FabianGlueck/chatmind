@@ -97,3 +97,26 @@ export async function saveSummary(slug: string, id: string, summary: string, bas
   if (!res.ok) throw new Error(data.error ?? `${res.status}`);
   return { ok: true, node: data as NodeDto };
 }
+
+export interface VaultInfo { dataDir: string; recent: string[]; overridden: boolean; canPick: boolean }
+
+/** Spec vault-switcher §4: the live data folder and the recently used ones. */
+export function fetchVault(): Promise<VaultInfo> {
+  return getJson('/api/vault');
+}
+
+/** Spec vault-switcher §4: switch the server to another folder; rejects with the server's reason (invalid path, busy). */
+export async function switchVault(dataDir: string): Promise<{ dataDir: string; recent: string[] }> {
+  const res = await fetch('/api/vault', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ dataDir }) });
+  const body = (await res.json().catch(() => ({}))) as { error?: string; dataDir?: string; recent?: string[] };
+  if (!res.ok) throw new Error(body.error === 'busy' ? 'A model answer is still streaming — try again when it is done.' : (body.error ?? `${res.status}`));
+  return { dataDir: body.dataDir ?? dataDir, recent: body.recent ?? [] };
+}
+
+/** Spec vault-switcher §2: the server opens Finder's folder dialog; null = cancelled. */
+export async function pickVaultFolder(): Promise<string | null> {
+  const res = await fetch('/api/vault/pick', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+  const body = (await res.json().catch(() => ({}))) as { error?: string; dataDir?: string | null };
+  if (!res.ok) throw new Error(body.error ?? `${res.status}`);
+  return body.dataDir ?? null;
+}

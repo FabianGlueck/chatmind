@@ -24,7 +24,7 @@ export function createRefetcher(run: () => Promise<void>): () => void {
 }
 
 /** Opens /api/events; the browser reconnects on its own. No-op where EventSource is missing (tests). */
-export function subscribeVaultEvents(onChange: (slugs: string[]) => void): () => void {
+export function subscribeVaultEvents(onChange: (slugs: string[]) => void, onSwitched?: () => void): () => void {
   if (typeof EventSource === 'undefined') return () => undefined;
   const es = new EventSource('/api/events');
   es.addEventListener('vault-changed', (e) => {
@@ -35,5 +35,6 @@ export function subscribeVaultEvents(onChange: (slugs: string[]) => void): () =>
       // malformed event — ignore
     }
   });
+  es.addEventListener('vault-switched', () => onSwitched?.()); // spec vault-switcher §5: another tab changed the folder
   return () => es.close();
 }

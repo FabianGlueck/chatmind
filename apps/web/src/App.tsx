@@ -7,6 +7,7 @@ import { compressStrand, createCanvas, createNote, deleteTurns, fetchCanvas, fet
 import { Composer, type ComposerMode } from './Composer';
 import { EditPreview, type EditState } from './EditPreview';
 import { createRefetcher, subscribeVaultEvents } from './events';
+import { VaultSwitcher } from './VaultSwitcher';
 import { nodeTitle, type FlowMarks, type TopicMarks } from './flow';
 import { GraphView } from './GraphView';
 import { ChatView } from './ChatView';
@@ -191,7 +192,7 @@ export function App() {
       const unknown = slugs.some((s) => !canvasesRef.current.some((c) => c.slug === s));
       if (cur === null || slugs.includes(cur) || unknown) refetch();
       else void fetchCanvases().then(setCanvases).catch(() => undefined);
-    });
+    }, () => window.location.assign('/')); // the folder changed under us: start over on the new vault
   }, []);
 
   // Spec M7 §6: the current entry always carries canvas and cursor, so a pushState from here leaves a Back target.
@@ -744,6 +745,7 @@ export function App() {
       <button type="button" className="edge-toggle right" aria-label={rightCollapsed ? 'Show panel' : 'Hide panel'} aria-expanded={!rightCollapsed} title={rightCollapsed ? 'Show panel' : 'Hide panel'} onClick={(e) => { e.currentTarget.blur(); toggleRight(); }}>{rightCollapsed ? '‹' : '›'}</button>
       <nav className="sidebar" aria-label="Canvases">
         <h1>chatmind</h1>
+        <VaultSwitcher />
         <ul>
           {canvases.map((c) => (
             <li key={c.slug}>
