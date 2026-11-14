@@ -3,6 +3,7 @@ packages:
   - apps/*
 allowBuilds:
   esbuild: true
-  better-sqlite3: true
+  # better-sqlite3 13 loads its N-API prebuilds first (lib/binding.js); its implicit node-gyp build is never used.
+  better-sqlite3: false
   electron: true
   electron-winstaller: false
