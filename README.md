@@ -39,7 +39,7 @@ pnpm build && pnpm start      # → http://localhost:3210
 
 For development, `pnpm dev` runs the API on :3210 and Vite on :5173 (open http://localhost:5173).
 
-Your conversations are stored in `~/Documents/chatmind` (change it with `--data-dir` or `CHATMIND_DATA_DIR`). To browse them in Obsidian, choose "Open folder as vault" on that folder.
+Your conversations are stored in `~/Documents/chatmind` (change it with `--data-dir` or `CHATMIND_DATA_DIR`). To browse them in Obsidian, choose "Open folder as vault" on that folder. To use it on several computers with Obsidian Sync, see [Syncing with Obsidian Sync](docs/usage.md#syncing-with-obsidian-sync).
 
 To try it with sample data first:
 

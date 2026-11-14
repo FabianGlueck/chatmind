@@ -58,6 +58,17 @@ describe('reading and writing memories (spec M15 §1)', () => {
       { kind: 'unparseable-memory', path: 'masterarbeit/memories/c.md', reason: 'no frontmatter block' },
     ]);
   });
+  it('a slug-named memory beats a sync conflict copy of it (sync spec §2)', async () => {
+    const root = await tmpDir();
+    await writeCanvas(sampleGraph(), root);
+    const dir = path.join(root, 'masterarbeit', 'memories');
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(path.join(dir, 'evaluation.md'), '---\ntopic: Evaluation\n---\n\n- remote\n');
+    await fs.writeFile(path.join(dir, 'evaluation (Conflicted copy MacBook 202611141200).md'), '---\ntopic: Evaluation\n---\n\n- local\n');
+    const { canvases, repairs } = await readVault(root);
+    expect(canvases[0]!.memories).toEqual([{ topic: 'Evaluation', covered: [], body: '- remote', path: 'masterarbeit/memories/evaluation.md' }]);
+    expect(repairs).toEqual([{ kind: 'duplicate-memory', path: 'masterarbeit/memories/evaluation (Conflicted copy MacBook 202611141200).md', topic: 'Evaluation', kept: 'masterarbeit/memories/evaluation.md' }]);
+  });
   it('writeMemory creates at a free slug path (never over another file), updates in place, keeps graph.memories current', async () => {
     const root = await tmpDir();
     await writeCanvas(sampleGraph(), root);

@@ -49,3 +49,13 @@ On a card inside an unbranched stretch of at least two turns, "Compress strand" 
 ## Editing cards
 
 Every card — question, answer or note — can be edited by hand in the panel or the chat view (the old text is overwritten, not kept). In the composer's **Edit** mode (or with E) you tell the model what to change instead; its rewrite streams into a preview that is written only when you accept it. A card's title (its summary) is editable in the panel as well.
+
+## Syncing with Obsidian Sync
+
+The data folder is a normal Obsidian vault, so Obsidian Sync can keep it in step across computers. Turn Sync on for that vault in Obsidian and point chatmind on every computer at its local copy (`--data-dir` or `CHATMIND_DATA_DIR`). Sync only runs while Obsidian has the vault open.
+
+- **Index one device only.** Run the indexer on one computer and start chatmind everywhere else with `--no-index` (or `CHATMIND_NO_INDEX=1` in `~/.config/chatmind/env`). Two indexers rename and summarise the same new cards independently, which leaves duplicate files behind.
+- **Work on one computer at a time.** Obsidian Sync merges Markdown files, but for `graph.canvas` the last change wins, so card positions moved on the other computer in the meantime are lost. Structure is never lost, because it lives in the cards' frontmatter.
+- **Hidden folders stay local.** Sync skips `.app/` (the index, rebuilt on each computer) and `.trash/`. A deleted or compressed turn goes into the trash only on the computer where you did it; elsewhere use Sync's version history to get it back.
+- **Conflict copies.** With Sync's "Create conflict file" setting, a conflict leaves a `… (Conflicted copy …).md` file next to the card or memory. chatmind keeps using the original and ignores the copy; `pnpm cli check` lists such copies so you can merge or delete them in Obsidian.
+- Phones can read and edit the vault in Obsidian, but chatmind itself runs only on a computer.

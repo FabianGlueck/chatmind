@@ -222,7 +222,7 @@ Per canvas, in this order:
    - No frontmatter / no `id` / invalid YAML → `unparseable-node`; file ignored, never touched.
    - Missing fields defaulted (`parents: []`, `topics: []`, `summary: ''`, missing `role` → `'user'`) → `defaulted-field`.
    - `parents` given as scalar → normalised to array, `defaulted-field`.
-   - Duplicate `id` → first by sorted path wins, `duplicate-id`.
+   - Duplicate `id` → first by sorted path wins, `duplicate-id`. *(Amended 2026-11-14, sync spec §2: a file named `{ULID}.md` / `{ULID}-{slug}.md` beats any other name first, so a sync conflict copy never wins.)*
 2. **Parse canvas** — missing → `canvas-missing`; invalid JSON → `canvas-corrupt`; continue with empty layout either way.
    For each `file` node, resolve in this order: (a) canvas node `id` is a known ULID → ours; if its `file` differs from the scanned path, emit `path-repaired`. (b) `file` matches a scanned node path → ours, emit `canvas-id-repaired` (the canvas was written by another tool, e.g. Obsidian dragging the file in). (c) `file` exists on disk but is not one of our nodes → foreign. (d) otherwise `orphan-canvas-node`, entry dropped. Every canvas node that is not a `file` node pointing at one of ours goes to `foreign`, along with every edge that touches a foreign node. A second canvas entry resolving to a node that already has one is dropped with `duplicate-canvas-node` (first entry wins).
 3. **Nodes without layout** (on disk, absent from canvas) → placeholder position below the first parent, otherwise at the origin; `layout-missing`. Deliberately naive; M3 replaces this single function with the real layout rule.

@@ -82,6 +82,16 @@ describe('readVault — node scan', () => {
     expect(repairs.filter((r) => r.kind === 'duplicate-id')).toEqual([{ kind: 'duplicate-id', id: C, kept: `masterarbeit/nodes/${C}-copy.md`, dropped: original }]);
   });
 
+  it('prefers an own-named file over a sync conflict copy that sorts before it (sync spec §2)', async () => {
+    const { root, dir } = await writtenVault();
+    const original = `masterarbeit/nodes/${C}.md`;
+    const copy = `masterarbeit/nodes/${C} (Conflicted copy MacBook 202611141200).md`; // " " (0x20) sorts before "."
+    await fs.copyFile(path.join(root, original), path.join(root, copy));
+    const { canvases, repairs } = await readVault(root);
+    expect(canvases[0]!.paths.get(C)).toBe(original);
+    expect(repairs).toEqual([{ kind: 'duplicate-id', id: C, kept: original, dropped: copy }]);
+  });
+
   it('finds nodes moved into subfolders', async () => {
     const { root, dir } = await writtenVault();
     await fs.mkdir(path.join(dir, 'archiv'));

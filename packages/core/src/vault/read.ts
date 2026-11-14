@@ -3,6 +3,7 @@ import path from 'node:path';
 import { derivedEdges, edgeId, parseCanvas } from '../canvas';
 import { parseNodeFile } from '../frontmatter';
 import { MEMORIES_DIR, parseMemoryFile } from '../memory';
+import { isCanvasSlug } from '../ids';
 import { topicKey } from '../topic-key';
 import type { CanvasGraph, Layout, NodeId, Repair, TopicMemory } from '../types';
 import { CANVAS_FILE, exists, listCanvasFolders, NODES_DIR, toVaultPath, walkMarkdownFiles } from './paths';
@@ -52,7 +53,11 @@ async function readCanvasFolder(root: string, slug: string, repairs: Repair[]): 
   return graph;
 }
 
-/** Step 1 of spec §9: every .md under the canvas folder, indexed by frontmatter id. */
+/**
+ * Step 1 of spec §9: every .md under the canvas folder, indexed by frontmatter id. Of two files sharing an id,
+ * one named the way chatmind names it (`{ULID}.md`, `{ULID}-{slug}.md`) beats any other, then the first by path:
+ * a sync conflict copy ("… (Conflicted copy …).md") sorts before its original but never wins (sync spec §2).
+ */
 async function scanNodes(root: string, graph: CanvasGraph, repairs: Repair[]): Promise<void> {
   let files: string[];
   try {
@@ -64,6 +69,7 @@ async function scanNodes(root: string, graph: CanvasGraph, repairs: Repair[]): P
     repairs.push({ kind: 'canvas-corrupt', canvas: graph.slug, reason: `cannot scan nodes: ${code ?? String(err)}` });
     return;
   }
+  const parsedFiles: { rel: string; parsed: Extract<ReturnType<typeof parseNodeFile>, { ok: true }>; own: boolean }[] = [];
   for (const abs of files) {
     const rel = toVaultPath(root, abs);
     let text: string;
@@ -78,6 +84,10 @@ async function scanNodes(root: string, graph: CanvasGraph, repairs: Repair[]): P
       repairs.push({ kind: 'unparseable-node', path: rel, reason: parsed.reason });
       continue;
     }
+    parsedFiles.push({ rel, parsed, own: isOwnNodeName(path.basename(abs), parsed.node.id) });
+  }
+  parsedFiles.sort((a, b) => Number(b.own) - Number(a.own)); // stable: path order within each group
+  for (const { rel, parsed } of parsedFiles) {
     const { node } = parsed;
     const kept = graph.paths.get(node.id);
     if (kept !== undefined) {
@@ -91,7 +101,17 @@ async function scanNodes(root: string, graph: CanvasGraph, repairs: Repair[]): P
   }
 }
 
-/** Spec M15 §1: every memory file of the canvas, first by path wins per topic (topicKey). */
+/** `{id}.md` or `{id}-{slug}.md` — a name `nodeFileName` could have given this node. */
+function isOwnNodeName(base: string, id: NodeId): boolean {
+  if (!base.startsWith(id) || !base.endsWith('.md')) return false;
+  const rest = base.slice(id.length, -3);
+  return rest === '' || (rest.startsWith('-') && isCanvasSlug(rest.slice(1)));
+}
+
+/**
+ * Spec M15 §1: every memory file of the canvas, one per topic (topicKey): a slug-named file
+ * (`<slug>.md`, as `memoryPath` names them) beats any other, then the first by path (sync spec §2).
+ */
 async function readMemories(root: string, slug: string, repairs: Repair[]): Promise<TopicMemory[]> {
   let files: string[];
   try {
@@ -99,6 +119,8 @@ async function readMemories(root: string, slug: string, repairs: Repair[]): Prom
   } catch {
     return []; // no memories/ folder (yet)
   }
+  const own = (abs: string): boolean => isCanvasSlug(path.basename(abs, '.md'));
+  files = [...files.filter(own), ...files.filter((f) => !own(f))];
   const out: TopicMemory[] = [];
   const byKey = new Map<string, TopicMemory>();
   for (const abs of files) {

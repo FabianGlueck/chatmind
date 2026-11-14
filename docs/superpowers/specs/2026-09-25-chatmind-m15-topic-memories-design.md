@@ -19,7 +19,7 @@ covered: [01M3BV9TH9SQ6HV09KSTSWFSNF, 01M3BVBPW9V8Z0EXKRPSJYCS4M]
 - **Identity** is `topic` in the frontmatter (as the ULID is for nodes), matched with `topicKey` (case, diacritics, `-`/`_` folded). The file name is only where a new file goes; a name collision gets `-2`, `-3`…
 - **`covered`** lists the user-node ids of every turn already distilled into this memory — the truth about "already done" lives in the file, so deleting `.app/index.db` never duplicates bullets.
 - The **body** is free Markdown; the indexer only ever appends to its end. A hand-written file (with `covered: []` or without `covered`) is adopted: the indexer appends facts from every turn of that topic.
-- The reader skips `<canvas>/memories/` when scanning nodes (it reported them as unparseable nodes before) and reads the memories into `CanvasGraph.memories`. A file without a `topic` is ignored (reported as `unparseable-memory`). Two files for the same topic: the first by path wins, the other is reported (`duplicate-memory`).
+- The reader skips `<canvas>/memories/` when scanning nodes (it reported them as unparseable nodes before) and reads the memories into `CanvasGraph.memories`. A file without a `topic` is ignored (reported as `unparseable-memory`). Two files for the same topic: the first by path wins, the other is reported (`duplicate-memory`). *(Amended 2026-11-14, sync spec §2: a slug-named file beats any other name first.)*
 - **Nothing is ever deleted or renamed**: a memory whose topic vanished (renamed in Obsidian, `retopic`) stays as it is; the new topic grows a new memory. The user can move bullets or change `topic:` by hand.
 
 ## 2. Generation (indexer, append-only)
