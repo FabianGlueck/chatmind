@@ -11,14 +11,14 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^4.0.87",
-    "@ai-sdk/mistral": "^4.0.71",
-    "@ai-sdk/openai": "^4.0.101",
+    "@ai-sdk/anthropic": "^4.0.102",
+    "@ai-sdk/mistral": "^4.0.84",
+    "@ai-sdk/openai": "^4.0.115",
     "@chatmind/core": "workspace:*",
     "@chatmind/index": "workspace:*",
-    "@hono/node-server": "^2.1.5",
+    "@hono/node-server": "^2.1.8",
     "@openrouter/ai-sdk-provider": "^3.1.0",
-    "ai": "^7.0.152",
-    "hono": "^4.13.13"
+    "ai": "^7.0.170",
+    "hono": "^4.13.18"
   }
 }
