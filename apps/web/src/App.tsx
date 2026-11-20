@@ -8,6 +8,7 @@ import { Composer, type ComposerMode } from './Composer';
 import { EditPreview, type EditState } from './EditPreview';
 import { createRefetcher, subscribeVaultEvents } from './events';
 import { VaultSwitcher } from './VaultSwitcher';
+import { Explainer } from './Explainer';
 import { nodeTitle, type FlowMarks, type TopicMarks } from './flow';
 import { GraphView } from './GraphView';
 import { ChatView } from './ChatView';
@@ -881,6 +882,13 @@ export function App() {
         )}
       </main>
       <div className="resizer" role="separator" aria-orientation="vertical" aria-label="Resize panel" aria-valuenow={panel.width} onPointerDown={panel.onPointerDown} />
+      <Explainer slug={slug} model={model} onKeepNote={(body) => void addNotes([body], undefined, 0)} onKeptBranch={(nodes) => {
+        const kSlug = slug;
+        for (const n of nodes) recentRef.current.set(n.id, Date.now()); // F2: a racing refetch must not drop them
+        setCanvas((c) => (c && c.slug === kSlug ? { ...c, nodes: [...c.nodes, ...nodes.filter((n) => !c.nodes.some((x) => x.id === n.id))] } : c));
+        const last = nodes.at(-1);
+        if (last && currentSlugRef.current === kSlug) setSelection({ ...clearSelection(), cursorId: last.id });
+      }} />
       <NodePanel node={selected} streaming={selectedStream?.status === 'streaming'} streamError={selectedStream?.status === 'error' ? (selectedStream.error ?? 'error') : null} palette={palette} related={related} canvasSlug={slug} onRelated={openRelated} onDelete={(id) => setPendingDelete([id])} canCompress={canCompress} onCompress={openCompress} hideBody={view === 'chat'} memory={memoryPanel} onEdit={(id) => openHandEdit(id)} onSaveTitle={slug ? async (id, summary, base) => { const res = await saveSummary(slug, id, summary, base); if (res.ok) nodeSaved(res.node); return res; } : undefined} editor={view === 'chat' ? undefined : (handEditor ?? undefined)} />
     </div>
   );

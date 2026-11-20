@@ -5,6 +5,11 @@ import {
   attachmentType,
   buildContext,
   buildEditContext,
+  buildExplainContext,
+  detectLanguage,
+  explainQuestion,
+  MAX_EXPLAIN_PASSAGE,
+  MAX_EXPLAIN_SELECTION,
   cleanRewrite,
   carryCovered,
   memoryOf,
@@ -50,8 +55,8 @@ import {
   type SendRequest,
 } from '@chatmind/core';
 import type { IndexStatus, VaultWatcher } from '@chatmind/index';
-import { generateText, streamText } from 'ai';
-import { Hono } from 'hono';
+import { generateText, streamText, type LanguageModel, type ModelMessage } from 'ai';
+import { Hono, type Context } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { attachmentsDir, decodeImages, withImages, writeAttachments } from './attachments';
 import { startCompletion, type CompletionEvent, type CompletionJob } from './completion';
@@ -439,31 +444,74 @@ export function createApp(options: AppOptions): Hono {
     // The strand above may carry images (M13); the request itself stays text, so the card's embeds survive the rewrite.
     const request = messages[messages.length - 1]!;
     const modelMessages = [...(await withImages(messages.slice(0, -1), attachmentsDir(dataDir, prepared.slug))), { role: 'user' as const, content: request.content }];
-    const abort = new AbortController();
-    const signal = c.req.raw.signal;
-    if (signal.aborted) abort.abort();
-    else signal.addEventListener('abort', () => abort.abort(), { once: true });
+    return streamPreview(c, modelFactory(spec), system, modelMessages, (text) => normalizeBody(cleanRewrite(text)));
+  });
 
-    return streamSSE(c, async (stream) => {
-      stream.onAbort(() => abort.abort());
-      let text = '';
-      try {
-        const result = streamText({ model: modelFactory(spec), system, messages: modelMessages, abortSignal: abort.signal, onError: () => undefined });
-        for await (const part of result.fullStream) {
-          if (part.type === 'text-delta') {
-            text += part.text;
-            await stream.writeSSE({ event: 'delta', data: JSON.stringify({ text: part.text }) });
-          } else if (part.type === 'error') throw part.error instanceof Error ? part.error : new Error(String(part.error));
-        }
-        if (abort.signal.aborted) return;
-        const clean = normalizeBody(cleanRewrite(text));
-        if (clean === '') await stream.writeSSE({ event: 'error', data: JSON.stringify({ message: 'the model returned no text', partial: text !== '' }) });
-        else await stream.writeSSE({ event: 'done', data: JSON.stringify({ text: clean }) });
-      } catch (err) {
-        if (abort.signal.aborted) return;
-        await stream.writeSSE({ event: 'error', data: JSON.stringify({ message: err instanceof Error ? err.message : String(err), partial: text !== '' }) }).catch(() => undefined);
-      }
+  // Spec quick-explain §4: a short explanation of one spot in a card, streamed and never written. The graph is read
+  // under the lock, the model runs outside it, tied to this request (closing the popover stops the call).
+  app.post('/api/canvases/:slug/nodes/:id/explain', async (c) => {
+    const req = (await c.req.json().catch(() => null)) as { selection?: unknown; passage?: unknown; exchange?: unknown; ask?: unknown; model?: unknown } | null;
+    const selection = typeof req?.selection === 'string' ? req.selection.trim() : '';
+    if (selection === '' || selection.length > MAX_EXPLAIN_SELECTION) return c.json({ error: `selection must hold 1 to ${MAX_EXPLAIN_SELECTION} characters` }, 400);
+    const { passage, ask = '', exchange = [] } = req as { passage?: unknown; ask?: unknown; exchange?: unknown };
+    if (passage !== undefined && typeof passage !== 'string') return c.json({ error: 'passage must be a string' }, 400);
+    const turns = Array.isArray(exchange) && exchange.length <= 20 && exchange.every((e) => typeof e?.q === 'string' && typeof e?.a === 'string') ? (exchange as { q: string; a: string }[]) : null;
+    if (typeof ask !== 'string' || turns === null) return c.json({ error: 'ask must be a string, exchange at most 20 { q, a } strings' }, 400);
+    if (ask.length + turns.reduce((n, t) => n + t.q.length + t.a.length, 0) > MAX_BODY_CHARS) return c.json({ error: `at most ${MAX_BODY_CHARS} characters` }, 400);
+    const spec = typeof req!.model === 'string' ? findModel(req!.model) : undefined;
+    if (!spec) return c.json({ error: 'unknown model' }, 400);
+    if (!isAvailable(spec, keys)) return c.json({ error: `model ${spec.id} is not available (missing ${spec.provider} API key)` }, 400);
+    const id = c.req.param('id');
+    const prepared = await lock.run(async () => {
+      if (streaming(id)) return { error: 409 as const, message: 'a reply is still streaming' };
+      const found = await readCanvas(dataDir, c.req.param('slug'));
+      if (!found) return { error: 404 as const, message: 'canvas not found' };
+      if (!found.graph.nodes.has(id)) return { error: 404 as const, message: `unknown node ${id}` };
+      return { slug: found.graph.slug, ctx: buildExplainContext(found.graph, id, { selection, passage: passage?.slice(0, MAX_EXPLAIN_PASSAGE), exchange: turns, ask }) };
     });
+    if ('error' in prepared) return c.json({ error: prepared.message }, prepared.error);
+    const messages = await withImages(prepared.ctx.messages, attachmentsDir(dataDir, prepared.slug));
+    return streamPreview(c, modelFactory(spec), prepared.ctx.system, messages, (text) => text.trim());
+  });
+
+  // Spec quick-explain §5: "Keep as branch" — the explanation the user already read becomes a question below the
+  // card and its answer, as if asked there; no model call.
+  app.post('/api/canvases/:slug/nodes/:id/explain/keep', async (c) => {
+    const req = (await c.req.json().catch(() => null)) as { selection?: unknown; exchange?: unknown; model?: unknown } | null;
+    const selection = typeof req?.selection === 'string' ? req.selection.trim() : '';
+    const raw = req?.exchange;
+    const turns = Array.isArray(raw) && raw.length >= 1 && raw.length <= 20 && raw.every((e) => typeof e?.q === 'string' && typeof e?.a === 'string' && normalizeBody(e.a) !== '' && e.a.length <= MAX_BODY_CHARS && e.q.length <= MAX_BODY_CHARS) ? (raw as { q: string; a: string }[]) : null;
+    if (selection === '' || selection.length > MAX_EXPLAIN_SELECTION || turns === null) return c.json({ error: 'selection and 1 to 20 { q, a } turns with non-empty answers are required' }, 400);
+    const spec = typeof req!.model === 'string' ? findModel(req!.model) : undefined;
+    if (!spec) return c.json({ error: 'unknown model' }, 400);
+    const id = c.req.param('id');
+    const result = await lock.run(async () => {
+      if (streaming(id)) return { error: 409 as const, message: 'a reply is still streaming' };
+      const found = await readCanvas(dataDir, c.req.param('slug'));
+      if (!found) return { error: 404 as const, message: 'canvas not found' };
+      const { graph } = found;
+      if (!graph.nodes.has(id)) return { error: 404 as const, message: `unknown node ${id}` };
+      // The first question names the spot; follow-ups hang below as further turns, as if asked there.
+      const language = detectLanguage([selection, ...turns.flatMap((t) => [t.q, t.a])]);
+      const written: MessageNode[] = [];
+      let parent = id;
+      for (const [i, t] of turns.entries()) {
+        const q = i === 0 ? explainQuestion(language, selection, t.q) : t.q.trim() === '' ? explainQuestion(language, selection, '') : t.q;
+        for (const [role, body] of [['user', q], ['assistant', t.a]] as const) {
+          const ms = Date.now();
+          const n: MessageNode = { id: newId(ms), role, ...(role === 'assistant' ? { model: spec.id } : {}), parents: [parent], created: isoTimestamp(ms), summary: '', topics: [], body: normalizeBody(body) };
+          graph.layout.set(n.id, placeChild(graph, parent));
+          graph.nodes.set(n.id, n);
+          written.push(n);
+          parent = n.id;
+        }
+      }
+      for (const n of written) await writeNode(graph, n.id, dataDir);
+      await writeCanvasFile(graph, dataDir);
+      return { nodes: written.map((n) => toNodeDto(n, graph.layout.get(n.id)!)) };
+    });
+    if ('error' in result) return c.json({ error: result.message }, result.error);
+    return c.json(result, 201);
   });
 
   // Spec M8 §4.2: the user's move — only x/y of existing file nodes in graph.canvas change.
@@ -638,6 +686,38 @@ export function createApp(options: AppOptions): Hono {
   }
 
   return app;
+}
+
+/**
+ * Spec M17 §4 / quick-explain §4: a model text streamed as a preview (`delta` … `done`/`error`) — writes nothing.
+ * Tied to the request: a client that goes away stops the call. `clean` shapes the final text; '' is an error.
+ */
+function streamPreview(c: Context, model: LanguageModel, system: string, messages: ModelMessage[], clean: (text: string) => string): Response {
+  const abort = new AbortController();
+  const signal = c.req.raw.signal;
+  if (signal.aborted) abort.abort();
+  else signal.addEventListener('abort', () => abort.abort(), { once: true });
+
+  return streamSSE(c, async (stream) => {
+    stream.onAbort(() => abort.abort());
+    let text = '';
+    try {
+      const result = streamText({ model, system, messages, abortSignal: abort.signal, onError: () => undefined });
+      for await (const part of result.fullStream) {
+        if (part.type === 'text-delta') {
+          text += part.text;
+          await stream.writeSSE({ event: 'delta', data: JSON.stringify({ text: part.text }) });
+        } else if (part.type === 'error') throw part.error instanceof Error ? part.error : new Error(String(part.error));
+      }
+      if (abort.signal.aborted) return;
+      const final = clean(text);
+      if (final === '') await stream.writeSSE({ event: 'error', data: JSON.stringify({ message: 'the model returned no text', partial: text !== '' }) });
+      else await stream.writeSSE({ event: 'done', data: JSON.stringify({ text: final }) });
+    } catch (err) {
+      if (abort.signal.aborted) return;
+      await stream.writeSSE({ event: 'error', data: JSON.stringify({ message: err instanceof Error ? err.message : String(err), partial: text !== '' }) }).catch(() => undefined);
+    }
+  });
 }
 
 /** Absolute file to serve for a request path, or null if it would leave `root`. Pure; no I/O. */

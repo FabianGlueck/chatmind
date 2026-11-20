@@ -42,6 +42,10 @@ Zoom far out and the canvas turns into a map: each topic's cards are covered by 
 
 On a card inside an unbranched stretch of at least two turns, "Compress strand" in the panel has a model rewrite the stretch as at most half as many turns. The new cards take the old ones' place; the originals go to `<data-dir>/.trash/`.
 
+## Quick explanations
+
+Mark a word or passage in a card — in the panel or the chat view — and click the "?" next to it: a popover explains that spot in two or three sentences, with the strand down to the card as context. Ask follow-ups in the field below. Nothing is saved: Esc or a click outside closes it. "Keep as branch" writes the exchange as a question and answer below the card; "Keep as note" puts it on the canvas as a note.
+
 ## Notes
 
 "+ Note", ⌘V on the canvas, or dropping a `.md`/`.txt` file creates a note: text that sits on the canvas without being sent to a model. Reply to a note to ask about it, or merge it into an existing strand.

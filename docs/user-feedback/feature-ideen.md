@@ -7,3 +7,4 @@
 - [ ] chatmind als obsidian-plugin (desktop + mobile, obsidian sync gleich mit dabei) — reader/writer auf die vault-api von obsidian umstellen, indexer ohne sqlite (reines js, auf mobile eher aus); vorher spike, ob react flow und streaming in einer obsidian-view auf dem iphone flüssig laufen
 - [ ] handy als client des rechners (web-app/pwa übers netz, z.b. tailscale) — server bräuchte eine option, nicht nur auf 127.0.0.1 zu lauschen, plus eine anmeldung
 - [ ] globale notes, die man hinzuziehen kann und global verändern kann, z.B. meine Job-Beschreibung
+- [ ] schnelle verständnisfrage zu einer antwort (z.B. ein wort nicht verstanden), ohne dass direkt ein eigenständiger node entsteht

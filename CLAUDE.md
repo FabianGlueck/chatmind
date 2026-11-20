@@ -18,7 +18,7 @@ Non-linear chat over an Obsidian vault. pnpm monorepo: `packages/core` (pure log
 - `apps/web` imports runtime code only from `@chatmind/core/graph` (browser-safe entry); the default entry pulls `node:fs`. Type-only imports from `@chatmind/core` are fine.
 - `@chatmind/index` has no network dependency; LLM/embedding calls are injected (`Summarizer`, `Embedder`) and implemented in `apps/server/src/index-providers.ts`.
 - Browser and server share the same core functions for context assembly (`contextSet`, `buildContext`, `promptTokens`) — never reimplement them on one side.
-- UI copy is English; only the merge preamble, role labels, note header, edit header, placeholders (composer and edit mode), badges and over-budget line follow `detectLanguage` (DE/EN).
+- UI copy is English; only the merge preamble, role labels, note header, edit header, explain header, placeholders (composer and edit mode), badges and over-budget line follow `detectLanguage` (DE/EN).
 - Style: compact TypeScript, doc comments that cite the spec section, no ESLint/Prettier. TDD; `pnpm typecheck && pnpm test` before every commit.
 
 ## Workflow

@@ -125,7 +125,7 @@ export function NodePanel({ node, streaming, streamError, palette, related, canv
         )}
         {streamError && <p className="composer-error" role="alert">{streamError}</p>}
         {editor ?? (!hideBody && (
-          <div className="body">
+          <div className="body" {...(streaming ? {} : { 'data-explain-id': node.id })}>
             <MessageBody text={node.body} slug={canvasSlug ?? ''} />
           </div>
         ))}

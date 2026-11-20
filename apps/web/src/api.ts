@@ -120,3 +120,15 @@ export async function pickVaultFolder(): Promise<string | null> {
   if (!res.ok) throw new Error(body.error ?? `${res.status}`);
   return body.dataDir ?? null;
 }
+
+export interface ExplainTurn { q: string; a: string }
+
+/** Spec quick-explain §4: a short explanation of `selection` in card `id`; the raw Response carries the SSE body (`delta` … `done`/`error`). Writes nothing. */
+export function explainSpot(slug: string, id: string, req: { selection: string; passage?: string; exchange: ExplainTurn[]; ask: string; model: string }, signal?: AbortSignal): Promise<Response> {
+  return fetch(`/api/canvases/${encodeURIComponent(slug)}/nodes/${encodeURIComponent(id)}/explain`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(req), ...(signal ? { signal } : {}) });
+}
+
+/** Spec quick-explain §5: keep the explanation as question/answer turns below the card. */
+export function keepExplanation(slug: string, id: string, req: { selection: string; exchange: ExplainTurn[]; model: string }): Promise<{ nodes: NodeDto[] }> {
+  return postJson(`/api/canvases/${encodeURIComponent(slug)}/nodes/${encodeURIComponent(id)}/explain/keep`, 'POST', req);
+}

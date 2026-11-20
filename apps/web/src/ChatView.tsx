@@ -102,7 +102,7 @@ export function ChatView({ canvas, streams, marks, palette, cursorId, preferred,
         {editor?.id === n.id ? editor.node : streaming && n.body === '' ? (
           <p className="streaming-status" role="status"><span className="dots" aria-hidden="true"><i /><i /><i /></span> {n.model ?? 'model'} is answering</p>
         ) : (
-          <div className="chat-body"><MessageBody text={n.body} slug={canvas.slug} /></div>
+          <div className="chat-body" {...(streaming ? {} : { 'data-explain-id': n.id })}><MessageBody text={n.body} slug={canvas.slug} /></div>
         )}
         {stream?.status === 'error' && <p className="composer-error" role="alert">{stream.error ?? 'error'}</p>}
       </article>

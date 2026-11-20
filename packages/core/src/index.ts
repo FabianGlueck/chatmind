@@ -22,3 +22,4 @@ export { MEMORIES_DIR, parseMemoryFile, serializeMemoryFile, memoryPath, memoryO
 export { topicKey } from './topic-key';
 export { MAX_BODY_CHARS, MAX_NOTE_CHARS } from './note';
 export { EDIT_HEADER, EDIT_ROLE, MAX_SUMMARY_CHARS, buildEditContext, cleanRewrite, cleanSummaryInput } from './edit';
+export { EXPLAIN_DEFAULT, EXPLAIN_HEADER, MAX_EXPLAIN_PASSAGE, MAX_EXPLAIN_SELECTION, buildExplainContext, explainQuestion, type ExplainInput } from './explain';
