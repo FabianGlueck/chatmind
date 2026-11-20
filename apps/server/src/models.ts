@@ -22,23 +22,26 @@ export interface ModelSpec { id: string; provider: Provider; label: string; cont
 // lists openai/gpt-6.1-sol (context_length 1050000, the newest Sol); gpt-6.1-sol is in the OpenAIResponsesModelId
 // union of @ai-sdk/openai@4.0.101. The OpenRouter entry comes first among OpenRouter models, because the composer
 // falls back to the first available model when none is remembered.
+// 2026-11-20 (user: "warum opus 5 und sonnet 5 und nicht jeweils 5.5"): the Claude 5.5 models replace 5.
+// https://openrouter.ai/api/v1/models lists anthropic/claude-opus-5.5 and anthropic/claude-sonnet-5.5 (context_length
+// 1000000 each); claude-opus-5-5 and claude-sonnet-5-5 are in the AnthropicModelId union of @ai-sdk/anthropic@4.0.87.
 // Mistral ids verified 2026-10-25 against the per-model pages on https://docs.mistral.ai/models/ and the
 // MistralChatModelId union in @ai-sdk/mistral@4.0.71; contextTokens from those pages: Mistral Large 4 = 1M,
 // Mistral Medium 3.5 = 256k, Mistral Small 4 (mistral-small-2603) = 256k.
 export const MODELS: readonly ModelSpec[] = [
-  { id: 'claude-opus-5', provider: 'anthropic', label: 'Claude Opus 5', contextTokens: 1_000_000 },
-  { id: 'claude-sonnet-5', provider: 'anthropic', label: 'Claude Sonnet 5', contextTokens: 1_000_000 },
+  { id: 'claude-opus-5-5', provider: 'anthropic', label: 'Claude Opus 5.5', contextTokens: 1_000_000 },
+  { id: 'claude-sonnet-5-5', provider: 'anthropic', label: 'Claude Sonnet 5.5', contextTokens: 1_000_000 },
   { id: 'gpt-6.1-sol', provider: 'openai', label: 'GPT-6.1 Sol', contextTokens: 1_050_000 },
   { id: 'gpt-5.6-luna', provider: 'openai', label: 'GPT-5.6 Luna', contextTokens: 1_050_000 },
   { id: 'openai/gpt-6.1-sol', provider: 'openrouter', label: 'GPT-6.1 Sol (OpenRouter)', contextTokens: 1_050_000 },
-  { id: 'anthropic/claude-opus-5', provider: 'openrouter', label: 'Claude Opus 5 (OpenRouter)', contextTokens: 1_000_000 },
-  { id: 'anthropic/claude-sonnet-5', provider: 'openrouter', label: 'Claude Sonnet 5 (OpenRouter)', contextTokens: 1_000_000 },
+  { id: 'anthropic/claude-opus-5.5', provider: 'openrouter', label: 'Claude Opus 5.5 (OpenRouter)', contextTokens: 1_000_000 },
+  { id: 'anthropic/claude-sonnet-5.5', provider: 'openrouter', label: 'Claude Sonnet 5.5 (OpenRouter)', contextTokens: 1_000_000 },
   { id: 'google/gemini-3.8-flash', provider: 'openrouter', label: 'Gemini 3.8 Flash (OpenRouter)', contextTokens: 1_048_576 },
   { id: 'mistral-large-4', provider: 'mistral', label: 'Mistral Large 4', contextTokens: 1_000_000 },
   { id: 'mistral-medium-3-5', provider: 'mistral', label: 'Mistral Medium 3.5', contextTokens: 256_000 },
   { id: 'mistral-small-2603', provider: 'mistral', label: 'Mistral Small 4', contextTokens: 256_000 },
 ];
-export const DEFAULT_MODEL = 'claude-opus-5';
+export const DEFAULT_MODEL = 'claude-opus-5-5';
 
 export function findModel(id: string): ModelSpec | undefined {
   return MODELS.find((m) => m.id === id);

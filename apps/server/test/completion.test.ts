@@ -13,7 +13,7 @@ async function seeded() {
   const g = linearGraph('masterarbeit', [{ role: 'user', content: 'Frage' }]);
   await writeCanvas(g, root);
   const parentId = [...g.nodes.keys()][0]!;
-  const assistant: MessageNode = { id: '01JQ8F5A0B1C2D3E4F5G6H7JAA', role: 'assistant', model: 'claude-opus-5', parents: [parentId], created: '2026-09-12T10:00:00Z', summary: '', topics: [], body: '' };
+  const assistant: MessageNode = { id: '01JQ8F5A0B1C2D3E4F5G6H7JAA', role: 'assistant', model: 'claude-opus-5-5', parents: [parentId], created: '2026-09-12T10:00:00Z', summary: '', topics: [], body: '' };
   return { root, g, parentId, assistant, layout: placeChild(g, parentId) };
 }
 
@@ -31,12 +31,12 @@ describe('startCompletion', () => {
     const events = await collect(job);
     expect(events.map((e) => e.type)).toEqual(['delta', 'delta', 'done']);
     const done = events[2] as Extract<CompletionEvent, { type: 'done' }>;
-    expect(done.node).toMatchObject({ id: assistant.id, role: 'assistant', model: 'claude-opus-5', body: 'Hello', layout });
+    expect(done.node).toMatchObject({ id: assistant.id, role: 'assistant', model: 'claude-opus-5-5', body: 'Hello', layout });
     await job.finished;
     const { canvases, repairs } = await readVault(root);
     expect(repairs).toEqual([]);
     expect(canvases[0]!.nodes.get(assistant.id)?.body).toBe('Hello');
-    expect(await fs.readFile(path.join(root, 'masterarbeit', 'nodes', `${assistant.id}.md`), 'utf8')).toContain('model: claude-opus-5');
+    expect(await fs.readFile(path.join(root, 'masterarbeit', 'nodes', `${assistant.id}.md`), 'utf8')).toContain('model: claude-opus-5-5');
   });
 
   it('writes partial text and emits error when the provider fails mid-stream', async () => {
@@ -94,7 +94,7 @@ describe('startCompletion', () => {
   it('two concurrent completions both land in the canvas (lock)', async () => {
     const { root, g, parentId, layout } = await seeded();
     const lock = new VaultLock();
-    const mk = (id: string): MessageNode => ({ id, role: 'assistant', model: 'claude-opus-5', parents: [parentId], created: '2026-09-12T10:00:00Z', summary: '', topics: [], body: '' });
+    const mk = (id: string): MessageNode => ({ id, role: 'assistant', model: 'claude-opus-5-5', parents: [parentId], created: '2026-09-12T10:00:00Z', summary: '', topics: [], body: '' });
     const l2 = { ...layout, x: layout.x + 480 };
     const j1 = startCompletion({ dataDir: root, slug: 'masterarbeit', assistant: mk('01JQ8F5A0B1C2D3E4F5G6H7JAA'), layout, model: mockModel(['one'], { delayMs: 5 }), system: 's', messages: [{ role: 'user', content: 'Frage' }], lock });
     const j2 = startCompletion({ dataDir: root, slug: 'masterarbeit', assistant: mk('01JQ8F5B0B1C2D3E4F5G6H7JAA'), layout: l2, model: mockModel(['two'], { delayMs: 1 }), system: 's', messages: [{ role: 'user', content: 'Frage' }], lock });

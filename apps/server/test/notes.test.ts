@@ -87,7 +87,7 @@ describe('asking about a note (spec M16 §4)', () => {
     const model = mockModel(['ok']);
     const app = createApp({ dataDir: root, keys: { anthropic: 'k' }, modelFactory: () => model });
     const note = (await (await post(app, { body: 'The contract says three months.' })).json()) as NodeDto;
-    const res = await app.request('/api/canvases/m/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [note.id], content: 'What is the notice period?', model: 'claude-opus-5' }) });
+    const res = await app.request('/api/canvases/m/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [note.id], content: 'What is the notice period?', model: 'claude-opus-5-5' }) });
     await res.text();
     const users = model.doStreamCalls[0]!.prompt.filter((m) => m.role === 'user').map((m) => JSON.stringify(m.content));
     expect(users[0]).toContain(`${NOTE_HEADER.en}\\n\\nThe contract says three months.`);

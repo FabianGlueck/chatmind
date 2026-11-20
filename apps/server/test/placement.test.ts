@@ -97,7 +97,7 @@ describe('the judge prompt (spec M14)', () => {
 describe('POST messages places a new strand next to its topic (spec M14)', () => {
   const headers = { 'content-type': 'application/json' };
   const send = (app: ReturnType<typeof createApp>, parentIds: string[], content = 'neue Frage') =>
-    app.request('/api/canvases/m/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds, content, model: 'claude-opus-5' }) });
+    app.request('/api/canvases/m/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds, content, model: 'claude-opus-5-5' }) });
   const layoutOf = async (res: Response) => (JSON.parse(/event: user-node\ndata: (.*)/.exec(await res.text())![1]!) as { layout: { x: number; y: number } }).layout;
 
   it('a new root lands right of the topic\'s cards; replies and unplaceable questions keep the old placement', async () => {

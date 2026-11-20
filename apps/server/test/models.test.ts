@@ -3,10 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_MODEL, MODELS, findModel, modelDtos } from '../src/models';
 
 describe('models', () => {
-  it('has the two Anthropic models, a default, and four providers', () => {
-    expect(findModel('claude-opus-5')?.provider).toBe('anthropic');
-    expect(findModel('claude-sonnet-5')?.provider).toBe('anthropic');
-    expect(DEFAULT_MODEL).toBe('claude-opus-5');
+  it('has the two Anthropic 5.5 models (direct and via OpenRouter), a default, and four providers', () => {
+    expect(findModel('claude-opus-5-5')?.provider).toBe('anthropic');
+    expect(findModel('claude-sonnet-5-5')?.provider).toBe('anthropic');
+    expect(findModel('anthropic/claude-opus-5.5')?.provider).toBe('openrouter');
+    expect(findModel('anthropic/claude-sonnet-5.5')?.provider).toBe('openrouter');
+    expect(MODELS.some((m) => /claude-(opus|sonnet)-5$/.test(m.id))).toBe(false);
+    expect(DEFAULT_MODEL).toBe('claude-opus-5-5');
     expect(new Set(MODELS.map((m) => m.provider))).toEqual(new Set(['anthropic', 'openai', 'openrouter', 'mistral']));
     expect(new Set(MODELS.map((m) => m.id)).size).toBe(MODELS.length);
   });

@@ -50,12 +50,12 @@ describe('sending with memories (spec M15 §4)', () => {
     await writeMemory(graph, { topic: 'Pandas', covered: [], body: '- nutzt pandas 2' }, root);
     const model = mockModel(['ok']);
     const app = createApp({ dataDir: root, keys: { anthropic: 'k' }, modelFactory: () => model });
-    const res = await app.request('/api/canvases/m/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [ids[1]], content: 'weiter', model: 'claude-opus-5', memoryTopics: ['pandas', 'Unbekannt'] }) });
+    const res = await app.request('/api/canvases/m/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [ids[1]], content: 'weiter', model: 'claude-opus-5-5', memoryTopics: ['pandas', 'Unbekannt'] }) });
     await res.text();
     const system = model.doStreamCalls[0]!.prompt.find((m) => m.role === 'system')!.content as string;
     expect(system).toContain('Memory of the topic "Pandas"');
     expect(system).toContain('- nutzt pandas 2');
-    const bad = await app.request('/api/canvases/m/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [], content: 'x', model: 'claude-opus-5', memoryTopics: 'Pandas' }) });
+    const bad = await app.request('/api/canvases/m/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [], content: 'x', model: 'claude-opus-5-5', memoryTopics: 'Pandas' }) });
     expect(bad.status).toBe(400);
   });
 });
@@ -68,7 +68,7 @@ describe('compress keeps memories covered (spec M15 §3)', () => {
     await writeMemory(graph, { topic: 'Pandas', covered: users.slice(0, 3), body: '- x' }, root); // Q4 not yet distilled
     const reply = JSON.stringify({ sections: [{ section: 1, turns: [{ covers: [1, 2], question: 'F12', answer: 'A12' }, { covers: [3, 4], question: 'F34', answer: 'A34' }] }] });
     const app = createApp({ dataDir: root, keys: { anthropic: 'k' }, modelFactory: () => mockModel([reply]) });
-    const res = await app.request('/api/canvases/m/compress', { method: 'POST', headers, body: JSON.stringify({ ids, model: 'claude-opus-5' }) });
+    const res = await app.request('/api/canvases/m/compress', { method: 'POST', headers, body: JSON.stringify({ ids, model: 'claude-opus-5-5' }) });
     const out = (await res.json()) as { replacement: Record<string, string> };
     const m = (await readCanvas(root, 'm'))!.graph.memories![0]!;
     expect(m.covered).toEqual([...users.slice(0, 3), out.replacement[users[0]!]]); // F12 covered; F34 is not (Q4 was not)

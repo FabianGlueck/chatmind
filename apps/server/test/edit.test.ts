@@ -50,7 +50,7 @@ const rewrite = (app: App, id: string, body: unknown, init: RequestInit = {}) =>
 
 /** Starts a slow send below `parent`; resolves once the user and assistant ids are known. */
 async function slowSend(app: App, parent: string) {
-  const res = await app.request('/api/canvases/m/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [parent], content: 'Why the mean?', model: 'claude-opus-5' }) });
+  const res = await app.request('/api/canvases/m/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [parent], content: 'Why the mean?', model: 'claude-opus-5-5' }) });
   const reader = res.body!.getReader();
   const decoder = new TextDecoder();
   let text = '';
@@ -129,7 +129,7 @@ describe('POST /api/canvases/:slug/nodes/:id/rewrite (spec M17 §4)', () => {
     const model = mockModel(['<<<\nThe arithmetic ', 'mean of the points.\n', '>>>\n']);
     const app = createApp({ dataDir: root, keys: { anthropic: 'k' }, modelFactory: () => model });
     const before = await tree(root);
-    const res = await rewrite(app, ids[1]!, { instruction: 'say arithmetic mean', model: 'claude-opus-5' });
+    const res = await rewrite(app, ids[1]!, { instruction: 'say arithmetic mean', model: 'claude-opus-5-5' });
     expect(res.status).toBe(200);
     const events = parseSse(await res.text());
     expect(events.filter((e) => e.event === 'delta').map((e) => (e.data as { text: string }).text).join('')).toBe('<<<\nThe arithmetic mean of the points.\n>>>\n');
@@ -147,7 +147,7 @@ describe('POST /api/canvases/:slug/nodes/:id/rewrite (spec M17 §4)', () => {
     const { root, ids } = await vault();
     const model = mockModel(['ok']);
     const app = createApp({ dataDir: root, keys: { anthropic: 'k' }, modelFactory: () => model });
-    await (await rewrite(app, ids[1]!, { instruction: 'shorter', model: 'claude-opus-5', draft: 'A previous preview.' })).text();
+    await (await rewrite(app, ids[1]!, { instruction: 'shorter', model: 'claude-opus-5-5', draft: 'A previous preview.' })).text();
     const last = JSON.stringify(model.doStreamCalls[0]!.prompt.at(-1)!.content);
     expect(last).toContain('<<<\\nA previous preview.\\n>>>');
     expect(last).not.toContain('The mean of the points.');
@@ -158,18 +158,18 @@ describe('POST /api/canvases/:slug/nodes/:id/rewrite (spec M17 §4)', () => {
     const app = createApp({ dataDir: root, keys: { anthropic: 'k' }, modelFactory: () => mockModel(['ok']) });
     expect((await rewrite(app, ids[1]!, { instruction: 'x', model: 'nope' })).status).toBe(400);
     expect((await rewrite(app, ids[1]!, { instruction: 'x', model: 'gpt-6.1-sol' })).status).toBe(400); // no openai key
-    expect((await rewrite(app, ids[1]!, { instruction: '  ', model: 'claude-opus-5' })).status).toBe(400);
-    expect((await rewrite(app, ids[1]!, { instruction: 'x', model: 'claude-opus-5', draft: 3 })).status).toBe(400);
-    expect((await rewrite(app, '01JQ8F9ZZZZZZZZZZZZZZZZZZZ', { instruction: 'x', model: 'claude-opus-5' })).status).toBe(404);
-    expect((await app.request(`/api/canvases/nope/nodes/${ids[1]}/rewrite`, { method: 'POST', headers, body: JSON.stringify({ instruction: 'x', model: 'claude-opus-5' }) })).status).toBe(404);
+    expect((await rewrite(app, ids[1]!, { instruction: '  ', model: 'claude-opus-5-5' })).status).toBe(400);
+    expect((await rewrite(app, ids[1]!, { instruction: 'x', model: 'claude-opus-5-5', draft: 3 })).status).toBe(400);
+    expect((await rewrite(app, '01JQ8F9ZZZZZZZZZZZZZZZZZZZ', { instruction: 'x', model: 'claude-opus-5-5' })).status).toBe(404);
+    expect((await app.request(`/api/canvases/nope/nodes/${ids[1]}/rewrite`, { method: 'POST', headers, body: JSON.stringify({ instruction: 'x', model: 'claude-opus-5-5' }) })).status).toBe(404);
   });
 
   it('409 while the card is streaming', async () => {
     const { root, ids } = await vault();
     const app = createApp({ dataDir: root, keys: { anthropic: 'k' }, modelFactory: () => mockModel(['a', 'b', 'c'], { delayMs: 50 }) });
     const send = await slowSend(app, ids[1]!);
-    expect((await rewrite(app, send.user, { instruction: 'x', model: 'claude-opus-5' })).status).toBe(409);
-    expect((await rewrite(app, send.assistant, { instruction: 'x', model: 'claude-opus-5' })).status).toBe(409);
+    expect((await rewrite(app, send.user, { instruction: 'x', model: 'claude-opus-5-5' })).status).toBe(409);
+    expect((await rewrite(app, send.assistant, { instruction: 'x', model: 'claude-opus-5-5' })).status).toBe(409);
     await send.finish();
   });
 
@@ -177,7 +177,7 @@ describe('POST /api/canvases/:slug/nodes/:id/rewrite (spec M17 §4)', () => {
     const { root, ids } = await vault();
     const app = createApp({ dataDir: root, keys: { anthropic: 'k' }, modelFactory: () => mockModel(['half'], { failAfter: true }) });
     const before = await tree(root);
-    const events = parseSse(await (await rewrite(app, ids[1]!, { instruction: 'x', model: 'claude-opus-5' })).text());
+    const events = parseSse(await (await rewrite(app, ids[1]!, { instruction: 'x', model: 'claude-opus-5-5' })).text());
     expect(events.at(-1)).toEqual({ event: 'error', data: { message: 'provider exploded', partial: true } });
     expect(await tree(root)).toEqual(before);
   });
@@ -187,7 +187,7 @@ describe('POST /api/canvases/:slug/nodes/:id/rewrite (spec M17 §4)', () => {
     const model = mockModel(['a', 'b', 'c', 'd', 'e', 'f'], { delayMs: 50 });
     const app = createApp({ dataDir: root, keys: { anthropic: 'k' }, modelFactory: () => model });
     const ac = new AbortController();
-    const res = await rewrite(app, ids[1]!, { instruction: 'x', model: 'claude-opus-5' }, { signal: ac.signal });
+    const res = await rewrite(app, ids[1]!, { instruction: 'x', model: 'claude-opus-5-5' }, { signal: ac.signal });
     const reader = res.body!.getReader();
     await reader.read();
     ac.abort();

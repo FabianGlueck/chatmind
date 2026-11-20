@@ -130,7 +130,7 @@ describe('GET /api/models', () => {
   it('lists models with availability from injected keys', async () => {
     const app = createApp({ dataDir: await tmpDir(), keys: { anthropic: 'k' } });
     const list = await json<{ id: string; provider: string; available: boolean }[]>(await app.request('/api/models'));
-    expect(list.find((m) => m.id === 'claude-opus-5')).toMatchObject({ provider: 'anthropic', available: true });
+    expect(list.find((m) => m.id === 'claude-opus-5-5')).toMatchObject({ provider: 'anthropic', available: true });
     expect(list.filter((m) => m.provider !== 'anthropic').every((m) => !m.available)).toBe(true);
   });
 });
@@ -234,7 +234,7 @@ describe('POST /api/canvases/:slug/messages', () => {
 
   it('writes the user node, streams the assistant, writes it, and returns the event sequence', async () => {
     const { root, app, lastId } = await appWithModel(['Hi', ' there']);
-    const res = await app.request('/api/canvases/masterarbeit/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [lastId], content: 'Und weiter?', model: 'claude-opus-5' }) });
+    const res = await app.request('/api/canvases/masterarbeit/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [lastId], content: 'Und weiter?', model: 'claude-opus-5-5' }) });
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toContain('text/event-stream');
     const events = parseSse(await res.text());
@@ -242,11 +242,11 @@ describe('POST /api/canvases/:slug/messages', () => {
     const user = events[0]!.data as { id: string; role: string; parents: string[]; body: string; layout: { x: number; y: number } };
     expect(user).toMatchObject({ role: 'user', parents: [lastId], body: 'Und weiter?' });
     const start = events[1]!.data as { id: string; model: string; parents: string[]; layout: { y: number } };
-    expect(start).toMatchObject({ model: 'claude-opus-5', parents: [user.id] });
+    expect(start).toMatchObject({ model: 'claude-opus-5-5', parents: [user.id] });
     expect(start.layout.y).toBe(user.layout.y + 280);
     expect(events[2]!.data).toEqual({ text: 'Hi' });
     const done = events[4]!.data as { id: string; body: string; model: string };
-    expect(done).toMatchObject({ id: start.id, body: 'Hi there', model: 'claude-opus-5' });
+    expect(done).toMatchObject({ id: start.id, body: 'Hi there', model: 'claude-opus-5-5' });
     const { canvases, repairs } = await readVault(root);
     expect(repairs).toEqual([]);
     expect(canvases[0]!.nodes.get(done.id)?.parents).toEqual([user.id]);
@@ -255,7 +255,7 @@ describe('POST /api/canvases/:slug/messages', () => {
 
   it('creates a root message when parentIds is empty', async () => {
     const { app } = await appWithModel(['ok']);
-    const res = await app.request('/api/canvases/masterarbeit/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [], content: 'Neu', model: 'claude-opus-5' }) });
+    const res = await app.request('/api/canvases/masterarbeit/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [], content: 'Neu', model: 'claude-opus-5-5' }) });
     const events = parseSse(await res.text());
     expect((events[0]!.data as { parents: string[] }).parents).toEqual([]);
     // a new strand starts in the top row, right of the existing one
@@ -265,20 +265,20 @@ describe('POST /api/canvases/:slug/messages', () => {
   it('validates input', async () => {
     const { app, lastId } = await appWithModel(['x']);
     const post = (body: unknown, slug = 'masterarbeit') => app.request(`/api/canvases/${slug}/messages`, { method: 'POST', headers, body: JSON.stringify(body) });
-    expect((await post({ parentIds: [lastId], content: 'x', model: 'claude-opus-5' }, 'nope')).status).toBe(404);
-    expect((await post({ parentIds: [lastId], content: '   ', model: 'claude-opus-5' })).status).toBe(400);
+    expect((await post({ parentIds: [lastId], content: 'x', model: 'claude-opus-5-5' }, 'nope')).status).toBe(404);
+    expect((await post({ parentIds: [lastId], content: '   ', model: 'claude-opus-5-5' })).status).toBe(400);
     expect((await post({ parentIds: [lastId], content: 'x', model: 'unknown-model' })).status).toBe(400);
-    expect((await post({ parentIds: [lastId], content: 'x', model: 'claude-sonnet-5' })).status).toBe(200);
-    expect((await post({ parentIds: ['01JQ8F9ZZZZZZZZZZZZZZZZZZZ'], content: 'x', model: 'claude-opus-5' })).status).toBe(400);
+    expect((await post({ parentIds: [lastId], content: 'x', model: 'claude-sonnet-5-5' })).status).toBe(200);
+    expect((await post({ parentIds: ['01JQ8F9ZZZZZZZZZZZZZZZZZZZ'], content: 'x', model: 'claude-opus-5-5' })).status).toBe(400);
     expect((await post('junk')).status).toBe(400);
   });
 
   it('rejects a model whose provider key is missing', async () => {
     const root = await vaultWithCanvas();
     const app = createApp({ dataDir: root, keys: {}, modelFactory: () => mockModel(['x']) });
-    const res = await app.request('/api/canvases/masterarbeit/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [], content: 'x', model: 'claude-opus-5' }) });
+    const res = await app.request('/api/canvases/masterarbeit/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [], content: 'x', model: 'claude-opus-5-5' }) });
     expect(res.status).toBe(400);
-    expect(await json<unknown>(res)).toEqual({ error: 'model claude-opus-5 is not available (missing anthropic API key)' });
+    expect(await json<unknown>(res)).toEqual({ error: 'model claude-opus-5-5 is not available (missing anthropic API key)' });
   });
 
   it('still delivers user-node/assistant-start/error when the completion fails before the handler subscribes (fast provider failure)', async () => {
@@ -286,7 +286,7 @@ describe('POST /api/canvases/:slug/messages', () => {
     const app = createApp({ dataDir: root, keys: { anthropic: 'k' }, modelFactory: () => mockModel([], { failAfter: true }) });
     const dto = await json<{ nodes: { id: string }[] }>(await app.request('/api/canvases/masterarbeit'));
     const lastId = dto.nodes.at(-1)!.id;
-    const res = await app.request('/api/canvases/masterarbeit/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [lastId], content: 'Und weiter?', model: 'claude-opus-5' }) });
+    const res = await app.request('/api/canvases/masterarbeit/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [lastId], content: 'Und weiter?', model: 'claude-opus-5-5' }) });
     expect(res.status).toBe(200);
     const events = parseSse(await res.text());
     expect(events.map((e) => e.event)).toEqual(['user-node', 'assistant-start', 'error']);
@@ -296,7 +296,7 @@ describe('POST /api/canvases/:slug/messages', () => {
   it('two concurrent sends to the same canvas both keep their user node (lock)', async () => {
     const { root, app, lastId } = await appWithModel(['ok']);
     const before = (await readVault(root)).canvases[0]!.nodes.size;
-    const post = (content: string) => app.request('/api/canvases/masterarbeit/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [lastId], content, model: 'claude-opus-5' }) });
+    const post = (content: string) => app.request('/api/canvases/masterarbeit/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [lastId], content, model: 'claude-opus-5-5' }) });
     const [r1, r2] = await Promise.all([post('one'), post('two')]);
     expect(r1.status).toBe(200);
     expect(r2.status).toBe(200);
@@ -317,7 +317,7 @@ describe('POST /api/canvases/:slug/messages', () => {
     const lastId = dto.nodes.at(-1)!.id;
     const beforeIds = new Set(dto.nodes.map((n) => n.id));
     const controller = new AbortController();
-    const res = await app.request('/api/canvases/masterarbeit/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [lastId], content: 'Und weiter?', model: 'claude-opus-5' }), signal: controller.signal });
+    const res = await app.request('/api/canvases/masterarbeit/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [lastId], content: 'Und weiter?', model: 'claude-opus-5-5' }), signal: controller.signal });
     expect(res.status).toBe(200);
     const reader = res.body!.getReader();
     await reader.read(); // first chunk (user-node), so the completion has definitely started
@@ -357,7 +357,7 @@ describe('POST /api/canvases/:slug/messages', () => {
 
   it('merges two targets: user node has both parents, canvas has both edges, model gets the block prompt', async () => {
     const { root, app, U1, U2, factory } = await appWithBranches(['ok']);
-    const res = await app.request('/api/canvases/masterarbeit/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [U1, U2], excludedIds: [], content: 'Combine both into a structure.', model: 'claude-opus-5' }) });
+    const res = await app.request('/api/canvases/masterarbeit/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [U1, U2], excludedIds: [], content: 'Combine both into a structure.', model: 'claude-opus-5-5' }) });
     expect(res.status).toBe(200);
     const events = parseSse(await res.text());
     expect(events.map((e) => e.event)).toEqual(['user-node', 'assistant-start', 'delta', 'done']);
@@ -383,7 +383,7 @@ describe('POST /api/canvases/:slug/messages', () => {
 
   it('honours excludedIds', async () => {
     const { app, R, U1, U2, factory } = await appWithBranches(['ok']);
-    await (await app.request('/api/canvases/masterarbeit/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [U1, U2], excludedIds: [R], content: 'go', model: 'claude-opus-5' }) })).text();
+    await (await app.request('/api/canvases/masterarbeit/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [U1, U2], excludedIds: [R], content: 'go', model: 'claude-opus-5-5' }) })).text();
     const roles = factory.doStreamCalls[0]!.prompt.filter((m) => m.role !== 'system').map((m) => m.role);
     expect(roles).toEqual(['user']); // R dropped from the prefix — only the merge turn remains
   });
@@ -391,15 +391,15 @@ describe('POST /api/canvases/:slug/messages', () => {
   it('rejects invalid target sets with 400', async () => {
     const { app, R, A, U1, U2 } = await appWithBranches(['ok']);
     const post = (body: unknown) => app.request('/api/canvases/masterarbeit/messages', { method: 'POST', headers, body: JSON.stringify(body) });
-    expect((await post({ parentIds: [A, U1], content: 'x', model: 'claude-opus-5' })).status).toBe(400);           // A is an ancestor of U1
-    expect((await post({ parentIds: [U1, '01JQ8F9ZZZZZZZZZZZZZZZZZZZ'], content: 'x', model: 'claude-opus-5' })).status).toBe(400);
-    expect((await post({ parentIds: [U1, U1], content: 'x', model: 'claude-opus-5' })).status).toBe(400);
-    expect((await post({ parentIds: [U1, U2], excludedIds: [U1], content: 'x', model: 'claude-opus-5' })).status).toBe(400);
-    expect((await post({ parentIds: [U1], excludedIds: [U2], content: 'x', model: 'claude-opus-5' })).status).toBe(400); // U2 not in U1's context
-    expect((await post({ parentIds: 'nope', content: 'x', model: 'claude-opus-5' })).status).toBe(400);
-    expect((await post({ parentIds: [U1], excludedIds: 'nope', content: 'x', model: 'claude-opus-5' })).status).toBe(400);
-    expect((await post({ content: 'x', model: 'claude-opus-5' })).status).toBe(400);                                  // parentIds missing (no parentId fallback)
-    expect((await post({ parentIds: [R], content: 'x', model: 'claude-opus-5' })).status).toBe(200);
+    expect((await post({ parentIds: [A, U1], content: 'x', model: 'claude-opus-5-5' })).status).toBe(400);           // A is an ancestor of U1
+    expect((await post({ parentIds: [U1, '01JQ8F9ZZZZZZZZZZZZZZZZZZZ'], content: 'x', model: 'claude-opus-5-5' })).status).toBe(400);
+    expect((await post({ parentIds: [U1, U1], content: 'x', model: 'claude-opus-5-5' })).status).toBe(400);
+    expect((await post({ parentIds: [U1, U2], excludedIds: [U1], content: 'x', model: 'claude-opus-5-5' })).status).toBe(400);
+    expect((await post({ parentIds: [U1], excludedIds: [U2], content: 'x', model: 'claude-opus-5-5' })).status).toBe(400); // U2 not in U1's context
+    expect((await post({ parentIds: 'nope', content: 'x', model: 'claude-opus-5-5' })).status).toBe(400);
+    expect((await post({ parentIds: [U1], excludedIds: 'nope', content: 'x', model: 'claude-opus-5-5' })).status).toBe(400);
+    expect((await post({ content: 'x', model: 'claude-opus-5-5' })).status).toBe(400);                                  // parentIds missing (no parentId fallback)
+    expect((await post({ parentIds: [R], content: 'x', model: 'claude-opus-5-5' })).status).toBe(200);
   });
 });
 
@@ -526,7 +526,7 @@ describe('POST /api/canvases/:slug/delete (spec M8 §5.3)', () => {
   it('409s while the turn is still streaming', async () => {
     const { root, ids } = await fourTurns();
     const app = createApp({ dataDir: root, keys: { anthropic: 'k' }, modelFactory: () => mockModel(['a', 'b', 'c'], { delayMs: 50 }) });
-    const send = await app.request('/api/canvases/masterarbeit/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [ids[5]], content: 'Q4', model: 'claude-opus-5' }) });
+    const send = await app.request('/api/canvases/masterarbeit/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [ids[5]], content: 'Q4', model: 'claude-opus-5-5' }) });
     const now = [...(await readVault(root)).canvases[0]!.nodes.keys()].sort();
     expect(now.length).toBe(7); // the user node is on disk, its answer still streams
     const user = now.at(-1)!;
@@ -553,7 +553,7 @@ describe('POST /api/canvases/:slug/compress (spec M11 §5)', () => {
     const root = await longVault();
     const app = createApp({ dataDir: root, keys: { anthropic: 'k' }, modelFactory: () => mockModel([reply]) });
     const ids = [...(await readVault(root)).canvases[0]!.nodes.keys()].sort();
-    const res = await app.request('/api/canvases/masterarbeit/compress', { method: 'POST', headers, body: JSON.stringify({ ids, model: 'claude-opus-5' }) });
+    const res = await app.request('/api/canvases/masterarbeit/compress', { method: 'POST', headers, body: JSON.stringify({ ids, model: 'claude-opus-5-5' }) });
     expect(res.status).toBe(200);
     const out = await json<{ removed: string[]; added: string[]; replacement: Record<string, string> }>(res);
     expect(out.removed.sort()).toEqual(ids);
@@ -565,7 +565,7 @@ describe('POST /api/canvases/:slug/compress (spec M11 §5)', () => {
     const nodes = [all.find((n) => n.parents.length === 0)!];
     for (let next; (next = all.find((n) => n.parents[0] === nodes[nodes.length - 1]!.id)); ) nodes.push(next);
     expect(nodes.map((n) => [n.role, n.body, n.parents.length])).toEqual([['user', 'Frage 1+2', 0], ['assistant', 'Antwort 1+2', 1], ['user', 'Frage 3+4', 1], ['assistant', 'Antwort 3+4', 1]]);
-    expect(nodes[3]!.model).toBe('claude-opus-5');
+    expect(nodes[3]!.model).toBe('claude-opus-5-5');
     expect((await fs.readdir(path.join(root, '.trash'))).length).toBe(8);
   });
 
@@ -573,7 +573,7 @@ describe('POST /api/canvases/:slug/compress (spec M11 §5)', () => {
     const root = await longVault();
     const app = createApp({ dataDir: root, keys: { anthropic: 'k' }, modelFactory: () => mockModel(['not json']) });
     const ids = [...(await readVault(root)).canvases[0]!.nodes.keys()];
-    const res = await app.request('/api/canvases/masterarbeit/compress', { method: 'POST', headers, body: JSON.stringify({ ids, model: 'claude-opus-5' }) });
+    const res = await app.request('/api/canvases/masterarbeit/compress', { method: 'POST', headers, body: JSON.stringify({ ids, model: 'claude-opus-5-5' }) });
     expect(res.status).toBe(502);
     expect((await json<{ error: string }>(res)).error).toMatch(/invalid compression: not JSON/);
     expect((await readVault(root)).canvases[0]!.nodes.size).toBe(8);
@@ -592,7 +592,7 @@ describe('POST /api/canvases/:slug/compress (spec M11 §5)', () => {
     let prompt = '';
     const model = mockModel([JSON.stringify({ sections: [{ section: 1, turns: [{ covers: [1, 2], question: 'Q', answer: 'A mit Nebenfrage' }] }] })]);
     const app = createApp({ dataDir: root, keys: { anthropic: 'k' }, modelFactory: () => { const orig = model.doGenerate.bind(model); model.doGenerate = async (o) => { prompt = JSON.stringify(o.prompt); return orig(o); }; return model; } });
-    const res = await app.request('/api/canvases/masterarbeit/compress', { method: 'POST', headers, body: JSON.stringify({ ids: [...g.nodes.keys()], model: 'claude-opus-5', fold: true }) });
+    const res = await app.request('/api/canvases/masterarbeit/compress', { method: 'POST', headers, body: JSON.stringify({ ids: [...g.nodes.keys()], model: 'claude-opus-5-5', fold: true }) });
     expect(res.status).toBe(200);
     expect(prompt).toContain('Side branch 1 after turn 2');
     const { removed, replacement } = await json<{ removed: string[]; replacement: Record<string, string> }>(res);
@@ -605,9 +605,9 @@ describe('POST /api/canvases/:slug/compress (spec M11 §5)', () => {
     const root = await vaultWithCanvas();
     const app = createApp({ dataDir: root, keys: { anthropic: 'k' }, modelFactory: () => mockModel([reply]) });
     const ids = [...(await readVault(root)).canvases[0]!.nodes.keys()];
-    const short = await app.request('/api/canvases/masterarbeit/compress', { method: 'POST', headers, body: JSON.stringify({ ids, model: 'claude-opus-5' }) });
+    const short = await app.request('/api/canvases/masterarbeit/compress', { method: 'POST', headers, body: JSON.stringify({ ids, model: 'claude-opus-5-5' }) });
     expect(short.status).toBe(400);
-    const unknown = await app.request('/api/canvases/masterarbeit/compress', { method: 'POST', headers, body: JSON.stringify({ ids: ['nope'], model: 'claude-opus-5' }) });
+    const unknown = await app.request('/api/canvases/masterarbeit/compress', { method: 'POST', headers, body: JSON.stringify({ ids: ['nope'], model: 'claude-opus-5-5' }) });
     expect(unknown.status).toBe(404);
   });
 });
@@ -621,7 +621,7 @@ describe('images (spec M13)', () => {
     const model = mockModel(['ok']);
     const app = createApp({ dataDir: root, keys: { anthropic: 'k' }, modelFactory: () => model });
     const dto = await json<{ nodes: { id: string }[] }>(await app.request('/api/canvases/masterarbeit'));
-    const post = (body: unknown) => app.request('/api/canvases/masterarbeit/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [dto.nodes.at(-1)!.id], model: 'claude-opus-5', ...(body as object) }) });
+    const post = (body: unknown) => app.request('/api/canvases/masterarbeit/messages', { method: 'POST', headers, body: JSON.stringify({ parentIds: [dto.nodes.at(-1)!.id], model: 'claude-opus-5-5', ...(body as object) }) });
     return { root, app, model, post };
   }
 
