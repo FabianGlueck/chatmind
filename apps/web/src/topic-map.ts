@@ -4,14 +4,20 @@ import type { CanvasDto } from '@chatmind/core';
 export const MAP_ZOOM = 0.28;
 /** Spec M10 §2: areas and labels start fading in below this zoom. */
 export const MAP_FADE_START = 0.38;
-/** Spec M10 §2: padding of the area around each card; cards closer than twice this join one region. */
+/** Spec M10 §2: padding of the area around each card. */
 export const REGION_PAD = 60;
+/**
+ * Spec M10 §2 (amended 2026-11-14): cards of one topic at most this far apart (gap between their rectangles) form
+ * one region with one label. Larger than the padded areas' overlap (2 × REGION_PAD), so cards the user dragged
+ * a little apart — gaps of one card height or so — still read as one topic instead of repeating its label.
+ */
+export const REGION_JOIN = 320;
 
 export interface Rect { x: number; y: number; width: number; height: number }
 export interface TopicRegion { topic: string; index: number; ids: string[]; rects: Rect[]; label: { x: number; y: number } }
 
 function near(a: Rect, b: Rect): boolean {
-  const p = 2 * REGION_PAD;
+  const p = REGION_JOIN;
   return a.x < b.x + b.width + p && b.x < a.x + a.width + p && a.y < b.y + b.height + p && b.y < a.y + a.height + p;
 }
 

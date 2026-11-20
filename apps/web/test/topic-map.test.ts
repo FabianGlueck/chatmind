@@ -1,6 +1,6 @@
 import type { CanvasDto } from '@chatmind/core';
 import { describe, expect, it } from 'vitest';
-import { MAP_FADE_START, MAP_ZOOM, labelFontSize, mapOpacity, topicRegions, visibleLabels } from '../src/topic-map';
+import { MAP_FADE_START, MAP_ZOOM, REGION_JOIN, labelFontSize, mapOpacity, topicRegions, visibleLabels } from '../src/topic-map';
 
 const W = 400;
 const H = 200;
@@ -14,6 +14,15 @@ describe('topicRegions (spec M10 §2)', () => {
     expect(r).toHaveLength(1);
     expect(r[0]).toMatchObject({ topic: 'A', index: 0, ids: ['a', 'b', 'c'] });
     expect(r[0]!.rects).toHaveLength(3);
+  });
+
+  it('keeps cards the user dragged a little apart in one region (one label), as on a real canvas', () => {
+    // y positions and gaps (199, 175, 240, 146, then 80) from a canvas where the label showed five times.
+    const ys = [292, 691, 1066, 1506, 1852, 2132, 2412];
+    const r = topicRegions(dto(ys.map((y, i) => n(`c${i}`, 1231 + (i % 3), y))), palette);
+    expect(r).toHaveLength(1);
+    expect(r[0]!.ids).toHaveLength(ys.length);
+    expect(topicRegions(dto([n('a', 0, 0), n('b', 0, H + REGION_JOIN + 1)]), palette)).toHaveLength(2);
   });
 
   it('splits a topic spread over the canvas into several regions, larger first', () => {
